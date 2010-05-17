@@ -245,6 +245,10 @@
 - (void)createLastCheckTimer
 {
 		lastCheckMinute = 0;
+		if (lastCheckTimer != nil) {
+			[lastCheckTimer invalidate];
+			[lastCheckTimer release];
+		}
 		lastCheckTimer = [[NSTimer scheduledTimerWithTimeInterval:(60) target:self selector:@selector(lastTimeCheckedTimer:) userInfo:nil repeats:YES] retain];
 }
 
@@ -252,6 +256,10 @@
 {
 	
 	//if (runningDebug == 1) if (runningDebug == 1) NSLog(@"creating timer with %d minute delay", [[prefs stringForKey:@"timeDelay"] intValue]);
+	if (mainTimer != nil) {
+		[mainTimer invalidate];
+		[mainTimer release];
+	}
     mainTimer = [[NSTimer scheduledTimerWithTimeInterval:(60 * x) target:self selector:@selector(timer:) userInfo:nil repeats:YES] retain];
 	
 }
@@ -470,8 +478,7 @@
 	// in case we had an error before, clear the highlightedimage and displaymessage
 	[statusItem setAlternateImage:highlightedImage];
 
-
-	xmlError = [[NSError alloc] init];
+	xmlError = [[[NSError alloc] init] autorelease];
 	[lastIds setArray:ids];
 	[results removeAllObjects];
 	[titles removeAllObjects];
@@ -505,7 +512,7 @@
 
 	newDataReply = [NSURLConnection sendSynchronousRequest:newRequest returningResponse:&newResponse error:&newError];
 
-	if (newError!=nil) {
+	if (newError != nil) {
 		
 		[self errorImageOn]; 
 		currentlyFetchingAndUpdating = NO;
@@ -515,11 +522,11 @@
 		[lastCheckTimer fire];
 		
 		[statusItem setMenu:GRMenu];
-	
+		[pool release];
 		return;
 	}
 			
-	NSXMLDocument *atomdoc = [[NSXMLDocument alloc] initWithData:[newDataReply retain] options:0 error:&xmlError];	
+	NSXMLDocument *atomdoc = [[NSXMLDocument alloc] initWithData:newDataReply options:0 error:&xmlError];	
 
 
 	
@@ -666,8 +673,8 @@
 
 	// [atomdoc autorelease];
 	
-	if (xmlError!=nil) {
-	
+	if (xmlError != nil) {
+
 		/*
 	     if (runningDebug == 1) NSLog(@"%@ %d %@", [ xmlError domain], [ xmlError code], [ xmlError localizedDescription]);
 		
@@ -1322,8 +1329,12 @@ if ([[prefs valueForKey:@"storedSID"] isEqualToString:@""]) {
 /// if (true) {
 
 	NSString *stringReply;
-	stringReply = [self sendConnectionRequest:@"https://www.google.com/accounts/ClientLogin":YES:@"":@"POST":[NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d",CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)[prefs valueForKey:@"Username"], NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8), CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)[self getUserPasswordFromKeychain], NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8), versionBuildNumber]];
-	
+	CFStringRef p1 = CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)[prefs valueForKey:@"Username"], NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8);
+	CFStringRef p2 = CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)[self getUserPasswordFromKeychain], NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8);
+	NSString * params = [NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d", p1, p2, versionBuildNumber];	
+	stringReply = [self sendConnectionRequest:@"https://www.google.com/accounts/ClientLogin":YES:@"":@"POST":params];
+	CFRelease(p1);
+	CFRelease(p2);
 	if ([stringReply isEqualToString:@""]) {
 	
 		storedSID = @""; // userSID = @"";
@@ -1407,7 +1418,7 @@ return [prefs valueForKey:@"storedSID"];
 - (IBAction)checkNow:(id)sender
 {
 
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	//NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	
 	/* first we check if the user has put in a password and username beforehand */
 	if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
@@ -1450,7 +1461,7 @@ return [prefs valueForKey:@"storedSID"];
 	//	[mainTimer invalidate];
 	//	[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
 	
-	[pool release];
+	//[pool release];
 }
 
 
