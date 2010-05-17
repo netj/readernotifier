@@ -25,7 +25,6 @@
 		C7C90A600AFA790F0080D14F /* nounread.png in Resources */ = {isa = PBXBuildFile; fileRef = C7C90A580AFA790F0080D14F /* nounread.png */; };
 		C7C90A610AFA790F0080D14F /* unread.png in Resources */ = {isa = PBXBuildFile; fileRef = C7C90A590AFA790F0080D14F /* unread.png */; };
 		C7C90A6E0AFA7A020080D14F /* Reader Notifier.icns in Resources */ = {isa = PBXBuildFile; fileRef = C7C90A6D0AFA7A020080D14F /* Reader Notifier.icns */; };
-		C7D8DE3F0AFAB7AA005782F4 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8D1107310486CEB800E47090 /* Info.plist */; };
 		C7F2B5EC0B0A566100790961 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C7F2B5EB0B0A566100790961 /* Security.framework */; };
 		C7F2B64B0B0A5E8300790961 /* Keychain.m in Sources */ = {isa = PBXBuildFile; fileRef = C7F2B64A0B0A5E8300790961 /* Keychain.m */; };
 /* End PBXBuildFile section */
@@ -260,7 +259,6 @@
 				C7C90A610AFA790F0080D14F /* unread.png in Resources */,
 				C7C90A6E0AFA7A020080D14F /* Reader Notifier.icns in Resources */,
 				C730B3EA0AFA9AEA00614F08 /* error.png in Resources */,
-				C7D8DE3F0AFAB7AA005782F4 /* Info.plist in Resources */,
 				C74A91BE0C6C5D9E004BF883 /* nounreadalt.png in Resources */,
 				C7B3E20A0DA900B400B29ECA /* bwerror.png in Resources */,
 				9A8BB4730DCA43F8003AD06B /* Localizable.strings in Resources */,
@@ -316,6 +314,8 @@
 		C01FCF4B08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -345,10 +345,8 @@
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					ppc,
-					i386,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_1)",
@@ -374,20 +372,24 @@
 		C01FCF4F08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 			};
 			name = Debug;
 		};
 		C01FCF5008A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 			};
 			name = Release;
 		};

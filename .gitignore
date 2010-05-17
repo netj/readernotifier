@@ -1,0 +1,4 @@
+build
+.DS_Store
+Reader Notifier.xcodeproj/*.pbxuser
+Reader Notifier.xcodeproj/*.perspectivev3
