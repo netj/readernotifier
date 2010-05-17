@@ -130,7 +130,7 @@
 	
 	result = SecKeychainSearchCreateFromAttributes(NULL, kSecGenericPasswordItemClass, &list, &search);
 	SecKeychainSearchCopyNext (search, &item);
-    status = SecKeychainItemModifyContent(item, &list, [newPassword length], [newPassword cString]);
+    status = SecKeychainItemModifyContent(item, &list, [newPassword length], [newPassword UTF8String]);
 	
     if (status != 0) {
         NSLog(@"Error modifying item: %d", (int)status);
@@ -165,7 +165,7 @@
     list.count = 3;
     list.attr = attributes;
 		
-    status = SecKeychainItemCreateFromContent(kSecGenericPasswordItemClass, &list, [password length], [password cString], NULL,NULL,&item);
+    status = SecKeychainItemCreateFromContent(kSecGenericPasswordItemClass, &list, [password length], [password UTF8String], NULL,NULL,&item);
     if (status != 0) {
         NSLog(@"Error creating new item: %d\n", (int)status);
     }
