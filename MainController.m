@@ -30,7 +30,7 @@
 	[super init];
 	[self setupEventHandlers];
 	
-	NSMutableDictionary *defaultPrefs = [NSMutableDictionary dictionary];
+	NSMutableDictionary * defaultPrefs = [NSMutableDictionary dictionary];
 	
 	[defaultPrefs setObject:@"20" forKey:@"maxItems"];
 	[defaultPrefs setObject:@"10" forKey:@"timeDelay"];
@@ -64,7 +64,7 @@
 }
 
 - (void)notificationTest2 {
-		NSDate *sleepUntil = [NSDate dateWithTimeIntervalSinceNow:8.0];
+		NSDate * sleepUntil = [NSDate dateWithTimeIntervalSinceNow:8.0];
 		[NSThread sleepUntilDate:sleepUntil];
 
 		[lastCheckTimer invalidate];
@@ -80,9 +80,9 @@
 	[NSApp activateIgnoringOtherApps:YES];
 
 	// Get system version
-	NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
-	NSString *versionString = [dict objectForKey:@"ProductVersion"];
-	NSArray *array = [versionString componentsSeparatedByString:@"."];
+	NSDictionary * dict = [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
+	NSString * versionString = [dict objectForKey:@"ProductVersion"];
+	NSArray * array = [versionString componentsSeparatedByString:@"."];
 	int count = [array count];
 	int major = (count >= 1) ? [[array objectAtIndex:0] intValue] : 0;
 	int minor = (count >= 2) ? [[array objectAtIndex:1] intValue] : 0;
@@ -165,7 +165,7 @@
 	}
 	
 	// Get the info dictionary (Info.plist)
-    NSDictionary *infoDictionary;
+    NSDictionary * infoDictionary;
 	infoDictionary = [[NSBundle mainBundle] infoDictionary];
 	
 	if (runningDebug == 1) NSLog(@"Hello. %@ Build %@", [infoDictionary objectForKey:@"CFBundleName"], [infoDictionary objectForKey:@"CFBundleVersion"]);
@@ -174,7 +174,7 @@
 		[torrentCastFolderPath setStringValue:[prefs valueForKey:@"torrentCastFolderPath"]];
 	}
 	
-	NSProcessInfo *procInfo = [NSProcessInfo processInfo];
+	NSProcessInfo * procInfo = [NSProcessInfo processInfo];
 	if (runningDebug == 1) NSLog(@"We're on %@", [procInfo operatingSystemVersionString]);
 }
 
@@ -231,11 +231,11 @@
 }
 
 - (NSString *)sendConnectionRequest:(NSString *)urlToConnectTo:(BOOL)handleCookies:(NSString *)cookieValue:(NSString *)theHTTPMethod:(NSString *)theHTTPBody {
-	NSError *error = nil;
-	NSURLResponse *response;
-	NSData *dataReply;
-	NSString *stringReply;
-	NSMutableURLRequest *request = [NSMutableURLRequest  requestWithURL: [NSURL URLWithString:urlToConnectTo]];
+	NSError * error = nil;
+	NSURLResponse * response;
+	NSData * dataReply;
+	NSString * stringReply;
+	NSMutableURLRequest * request = [NSMutableURLRequest  requestWithURL: [NSURL URLWithString:urlToConnectTo]];
 	[request setTimeoutInterval:5.0];
 	
 	if (isLeopard) {
@@ -264,11 +264,11 @@
 	// we've tried to fix it with releasing atomdoc2 and temparray5 (and not releasing dstring)
 	// http://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=json&ck=1165697710220&client=scroll
 
-	NSError *newError = nil;
-	NSURLResponse *newResponse;
-	NSData *newDataReply;
+	NSError * newError = nil;
+	NSURLResponse * newResponse;
+	NSData * newDataReply;
 	
-	NSMutableURLRequest *newRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=xml&client=scroll",[self getURLPrefix]]]];
+	NSMutableURLRequest * newRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=xml&client=scroll",[self getURLPrefix]]]];
 
 	// we need to do this, otherwise we can risk get an old one :(  - seriously, we did!
 	[newRequest setCachePolicy:NSURLRequestReloadIgnoringCacheData];
@@ -284,9 +284,9 @@
 	newDataReply = [NSURLConnection sendSynchronousRequest:newRequest returningResponse:&newResponse error:&newError];
 	
 	if (newError==nil) {
-		NSXMLDocument *atomdoc2 = [[NSXMLDocument alloc] initWithData:newDataReply options:0 error:&xmlError];	
+		NSXMLDocument * atomdoc2 = [[NSXMLDocument alloc] initWithData:newDataReply options:0 error:&xmlError];	
 		if (runningDebug == 1) NSLog(@"getUnreadCount1");
-		NSMutableArray *tempArray5 = [[NSMutableArray alloc] init];
+		NSMutableArray * tempArray5 = [[NSMutableArray alloc] init];
 		
 		if (runningDebug == 1) NSLog(@"getUnreadCount2");
 
@@ -300,7 +300,7 @@
 		
 
 		int k = 0, t = 0;
-		NSString *dString;
+		NSString * dString;
 		for (k = 0; k < [tempArray5 count]; k++) {
 			dString = [[tempArray5 objectAtIndex:k] stringValue];
 			t = t + [dString intValue];
@@ -329,7 +329,7 @@
 }
 
 - (void)retrieveGoogleFeed {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	
 	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed begin");
 
@@ -354,11 +354,11 @@
 	
 	/* new */
 	
-	NSError *newError = nil;
-	NSURLResponse *newResponse;
-	NSData *newDataReply;
+	NSError * newError = nil;
+	NSURLResponse * newResponse;
+	NSData * newDataReply;
 	
-	NSMutableURLRequest *newRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/atom/user/-/%@?r=d&xt=user/-/state/com.google/read&n=%d",[self getURLPrefix],[self getLabel],[[prefs valueForKey:@"maxItems"] intValue]+1]]];
+	NSMutableURLRequest * newRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/atom/user/-/%@?r=d&xt=user/-/state/com.google/read&n=%d",[self getURLPrefix],[self getLabel],[[prefs valueForKey:@"maxItems"] intValue]+1]]];
 	[newRequest setTimeoutInterval:5.0];
 	[newRequest setCachePolicy:NSURLRequestReloadIgnoringCacheData];
 	if (isLeopard) {
@@ -386,7 +386,7 @@
 		return;
 	}
 			
-	NSXMLDocument *atomdoc = [[NSXMLDocument alloc] initWithData:newDataReply options:0 error:&xmlError];	
+	NSXMLDocument * atomdoc = [[NSXMLDocument alloc] initWithData:newDataReply options:0 error:&xmlError];	
 
 	[titles addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/title/text()" error:NULL]];
 	[sources addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/title/text()" error:NULL]];
@@ -398,7 +398,7 @@
 	
 	int k = 0;
 	for(k = 0; k < [titles count]; k++) {
-		NSMutableArray *tempArray0 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@rel='alternate']/@href",k+1] error:NULL]];
+		NSMutableArray * tempArray0 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@rel='alternate']/@href",k+1] error:NULL]];
 		if([tempArray0 count] > 0){
 			[links insertObject:[[tempArray0 objectAtIndex:0] stringValue] atIndex:k];
 		} else {
@@ -411,11 +411,11 @@
 	
 	int m = 0;
 	for (m = 0; m < [titles count]; m++) {
-		NSMutableArray *tempArray2 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/summary/text()",m+1] error:NULL]];
+		NSMutableArray * tempArray2 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/summary/text()",m+1] error:NULL]];
 		if ( [tempArray2 count]>0 ) {
 			[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [self flattenHTML:[self trimDownString:[[tempArray2 objectAtIndex:0] stringValue]:maxLettersInSummary]]] atIndex:m];
 		} else {
-			NSMutableArray *tempArray3 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/content/text()",m+1] error:NULL]];
+			NSMutableArray * tempArray3 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/content/text()",m+1] error:NULL]];
 			if( [tempArray3 count]>0 ) {
 				[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [self flattenHTML:[self trimDownString:[[tempArray3 objectAtIndex:0] stringValue]:maxLettersInSummary]]] atIndex:m];
 			} else {
@@ -431,7 +431,7 @@
 	// torrentcasting
 	int l;
 	for (l=0; l<[titles count]; l++) {
-		NSMutableArray *tempArray2 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@type='application/x-bittorrent']/@href",l+1] error:NULL]];
+		NSMutableArray * tempArray2 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@type='application/x-bittorrent']/@href",l+1] error:NULL]];
 		if ( [tempArray2 count]>0 ) {
 			[torrentcastlinks insertObject:[[tempArray2 objectAtIndex:0] stringValue] atIndex:l];
 		} else {
@@ -506,7 +506,7 @@
 - (void)updateMenu {
 
 	// threading
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	
 	[lastCheckTimer invalidate];
 	[self createLastCheckTimer];
@@ -534,12 +534,12 @@
 		
 			if (![[torrentcastlinks objectAtIndex:i] isEqualToString:@""]) {
 			
-				NSFileManager *fm = [NSFileManager defaultManager];	
+				NSFileManager * fm = [NSFileManager defaultManager];	
 				if ([fm fileExistsAtPath:[prefs valueForKey:@"torrentCastFolderPath"]] == YES) { 
 				
 					[self downloadFile:[torrentcastlinks objectAtIndex:i]:[NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]];
 						
-					NSMutableString *feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:i]];
+					NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:i]];
 					[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
 					[self sendConnectionRequest:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",[self getURLPrefix],feedstring,[ids objectAtIndex:i],[self getTokenFromGoogle]]:YES:[self loginToGoogle]:@"POST":@""];
 					[feedstring release];
@@ -603,9 +603,9 @@
 	int j = 0;
 	for (j = 0; j < [results count] && j < [[prefs valueForKey:@"maxItems"] intValue]; j++) {
 		if ([[prefs valueForKey:@"minimalFunction"] boolValue] != YES) {
-			NSString *trimmedTitleTag = [[NSString alloc] initWithString:[self trimDownString:[self flattenHTML:[[titles objectAtIndex:j] stringValue]]:60]];
-			NSString *trimmedSourceTag = [[NSString alloc] initWithString:[self trimDownString:[self flattenHTML:[[sources objectAtIndex:j] stringValue]]:maxLettersInSource]];
-			NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
+			NSString * trimmedTitleTag = [[NSString alloc] initWithString:[self trimDownString:[self flattenHTML:[[titles objectAtIndex:j] stringValue]]:60]];
+			NSString * trimmedSourceTag = [[NSString alloc] initWithString:[self trimDownString:[self flattenHTML:[[sources objectAtIndex:j] stringValue]]:maxLettersInSource]];
+			NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
 
 			[item setAttributedTitle:[self makeAttributedMenuString:trimmedSourceTag:trimmedTitleTag]];
 			if ([[prefs valueForKey:@"dontShowTooltips"] boolValue] != YES) {
@@ -619,7 +619,7 @@
 			[GRMenu insertItem:item atIndex:currentIndexCount];
 			
 			// and then set the alternate 
-			NSMenuItem *itemSecondary = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(doOptionalActionFromMenu:) keyEquivalent:@""];
+			NSMenuItem * itemSecondary = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(doOptionalActionFromMenu:) keyEquivalent:@""];
 			
 			if ([[prefs valueForKey:@"onOptionalActAlsoStarItem"] boolValue] == YES) {
 				[itemSecondary setAttributedTitle:[self makeAttributedMenuString:trimmedSourceTag:NSLocalizedString(@"Star item and mark as read",nil)]];
@@ -725,10 +725,10 @@
 }
 
 - (void)downloadFile:(NSString *)url:(NSString *)filename {
-	NSError *error = nil;
-	NSURLResponse *response;
-	NSData *dataReply;
-	NSMutableURLRequest *DownloadRequest = [NSMutableURLRequest  requestWithURL: [NSURL URLWithString:url]];
+	NSError * error = nil;
+	NSURLResponse * response;
+	NSData * dataReply;
+	NSMutableURLRequest * DownloadRequest = [NSMutableURLRequest  requestWithURL: [NSURL URLWithString:url]];
 	[DownloadRequest setTimeoutInterval:5.0];
 	[DownloadRequest setHTTPMethod:@"GET"]; // Changing the setHTTPMethod to "POST" sends the HTTPBody
 	dataReply = [NSURLConnection sendSynchronousRequest:DownloadRequest returningResponse:&response error:&error];
@@ -737,7 +737,7 @@
 
 - (void)displayAlert:(NSString *) headerText:(NSString *) bodyText {
 	[NSApp activateIgnoringOtherApps:YES];		
-	NSAlert *theAlert = [[NSAlert alloc] init];
+	NSAlert * theAlert = [[NSAlert alloc] init];
 	theAlert = [NSAlert alertWithMessageText:headerText
 							   defaultButton:NSLocalizedString(@"Thanks",nil)
 							 alternateButton:nil
@@ -802,7 +802,7 @@
 }
 
 - (NSString *)searchAndReplace:(NSString *)searchString:(NSString *)replaceString:(NSString *)inString {
-	NSMutableString *mstr;
+	NSMutableString * mstr;
 	NSRange substr;
 	
 	mstr = [NSMutableString stringWithString:inString];
@@ -817,8 +817,8 @@
 }
 
 - (NSString *)grabUserNo {
-		NSString *storedUserNo;
-		NSScanner *theScanner;
+		NSString * storedUserNo;
+		NSScanner * theScanner;
 		theScanner = [NSScanner scannerWithString:[[user objectAtIndex:0] stringValue]];
 	
 		if ([theScanner scanString:@"tag:google.com,2005:reader/user/" intoString:NULL] &&
@@ -836,11 +836,11 @@
 - (NSString *)getGoogleSIDClean {
 	// the problem with loginToGoogle is that you get SID=34935785; Ð we need it without the SID= and ; at the end.
 
-	NSString *stringReply;
+	NSString * stringReply;
 	stringReply = [self loginToGoogle];
 	
 	if (![stringReply isEqualToString:@""]) {			
-		NSScanner *theScanner;
+		NSScanner * theScanner;
 		theScanner = [NSScanner scannerWithString:[NSString stringWithString:stringReply]];
 		if ([theScanner scanString:@"SID=" intoString:NULL] &&
 			[theScanner scanUpToString:@"\nLSID=" intoString:&storedSID]) {
@@ -855,7 +855,7 @@
 
 - (NSString *)loginToGoogle {
 	if ([[prefs valueForKey:@"storedSID"] isEqualToString:@""]) {
-		NSString *stringReply;
+		NSString * stringReply;
 		CFStringRef p1 = CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)[prefs valueForKey:@"Username"], NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8);
 		CFStringRef p2 = CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)[self getUserPasswordFromKeychain], NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8);
 		NSString * params = [NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d", p1, p2, versionBuildNumber];	
@@ -872,7 +872,7 @@
 			[self createLastCheckTimer];
 			[lastCheckTimer fire];		
 		} else {
-			NSScanner *theScanner;
+			NSScanner * theScanner;
 			theScanner = [NSScanner scannerWithString:[NSString stringWithString:stringReply]];
 			if ([theScanner scanString:@"SID=" intoString:NULL] &&
 				[theScanner scanUpToString:@"\nLSID=" intoString:&storedSID]) {
@@ -903,8 +903,8 @@
 }
 
 - (void)checkNowWithDelayDetached:(NSNumber *)delay {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	NSDate *sleepUntil = [NSDate dateWithTimeIntervalSinceNow:[delay floatValue]];
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+	NSDate * sleepUntil = [NSDate dateWithTimeIntervalSinceNow:[delay floatValue]];
 	[NSThread sleepUntilDate:sleepUntil];
 	[self checkNow:nil];
 	[pool release];
@@ -945,16 +945,16 @@
 
 - (void)markOneAsStarredDetached:(NSNumber *)aNumber {
 	// threading
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 
 	int index = [aNumber intValue];
 	
-	NSString *feedstring;
+	NSString * feedstring;
 	feedstring = [self searchAndReplace:@":":@"%3A":[feeds objectAtIndex:index]];
 	feedstring = [self searchAndReplace:@"/":@"%2F":feedstring];
 	feedstring = [self searchAndReplace:@"=":@"-":feedstring];
 
-	NSString *idsstring;
+	NSString * idsstring;
 	idsstring = [self searchAndReplace:@"/":@"%2F":[ids objectAtIndex:index]];
 	idsstring = [self searchAndReplace:@",":@"%2C":idsstring];
 	idsstring = [self searchAndReplace:@":":@"%3A":idsstring];
@@ -969,7 +969,7 @@
 
 - (void)markOneAsReadDetached:(NSNumber *)aNumber {
 	// threading
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	
 	if (runningDebug == 1) NSLog(@"markOneAsReadDetatched begin");
 	
@@ -978,7 +978,7 @@
 	if ([feeds count] >= index+1 && [feeds count] >= index+1) {
 
 		// we replace all instances of = to %3D for google
-		NSMutableString *feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:index]];
+		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:index]];
 		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
 		[self sendConnectionRequest:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",[self getURLPrefix],feedstring,[ids objectAtIndex:index],[self getTokenFromGoogle]]:YES:[self loginToGoogle]:@"POST":@""];
 		[feedstring release];
@@ -997,10 +997,10 @@
 
 - (void)markResultsAsReadDetached {
 	// threading
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	int j = 0;
 	for (j = 0; j < [results count]; j++) {
-		NSMutableString *feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:j]];
+		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:j]];
 		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
 		[self sendConnectionRequest:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",[self getURLPrefix],feedstring,[ids objectAtIndex:j],[self getTokenFromGoogle]]:YES:[self loginToGoogle]:@"POST":@""];
 		[feedstring release];
@@ -1027,7 +1027,7 @@
 
 - (void)markAllAsReadDetached {
 	// threading
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	
 	[statusItem setMenu:tempMenuSec];
 	
@@ -1160,21 +1160,21 @@
 }
 
 - (void)markOneAsStarred:(int)index {
-	NSString *feedstring;
+	NSString * feedstring;
 	feedstring = [self searchAndReplace:@":":@"%3A":[feeds objectAtIndex:index]];
 	feedstring = [self searchAndReplace:@"/":@"%2F":feedstring];
 	feedstring = [self searchAndReplace:@"=":@"-":feedstring];
 
-	NSString *idsstring;
+	NSString * idsstring;
 	idsstring = [self searchAndReplace:@"/":@"%2F":[[ids objectAtIndex:index] stringValue]];
 	idsstring = [self searchAndReplace:@",":@"%2C":idsstring];
 	idsstring = [self searchAndReplace:@":":@"%3A":idsstring];
 
-	NSURL *markOneAsReadUrl = [NSURL URLWithString:[NSString stringWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=scroll", [self getURLPrefix]]]];
-	NSMutableURLRequest *markOneRead = [NSMutableURLRequest requestWithURL:markOneAsReadUrl];
+	NSURL * markOneAsReadUrl = [NSURL URLWithString:[NSString stringWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=scroll", [self getURLPrefix]]]];
+	NSMutableURLRequest * markOneRead = [NSMutableURLRequest requestWithURL:markOneAsReadUrl];
 	[markOneRead setHTTPMethod:@"POST"];
 	
-	NSString *sendString = [NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F%@%%2Fstate%%2Fcom.google%%2Fstarred&T=%@", feedstring, idsstring, [self grabUserNo], [self getTokenFromGoogle]];	
+	NSString * sendString = [NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F%@%%2Fstate%%2Fcom.google%%2Fstarred&T=%@", feedstring, idsstring, [self grabUserNo], [self getTokenFromGoogle]];	
 	
 	[markOneRead setHTTPBody:[sendString dataUsingEncoding:NSUTF8StringEncoding]];
 	if (isLeopard) {
@@ -1185,7 +1185,7 @@
 
 	[markOneRead setTimeoutInterval:5.0];
 	[markOneRead setValue:[self loginToGoogle] forHTTPHeaderField:@"Cookie"];
-	NSURLConnection *markOneAsRead = [NSURLConnection connectionWithRequest:markOneRead delegate:self];
+	NSURLConnection * markOneAsRead = [NSURLConnection connectionWithRequest:markOneRead delegate:self];
 	// TODO: uhm, what here?
 	if (markOneAsRead) {
 		
@@ -1196,13 +1196,13 @@
 
 - (void)markOneAsRead:(int)index {
 	// threading
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	// we replace all instances of = to %3D for google
-	NSMutableString *feedstring = [[feeds objectAtIndex:index] mutableCopy];
+	NSMutableString * feedstring = [[feeds objectAtIndex:index] mutableCopy];
 	[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
 
-	NSURL *posturl = [NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",[self getURLPrefix],feedstring,[ids objectAtIndex:index],[self getTokenFromGoogle]]];
-	NSMutableURLRequest *postread = [NSMutableURLRequest requestWithURL:posturl];
+	NSURL * posturl = [NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",[self getURLPrefix],feedstring,[ids objectAtIndex:index],[self getTokenFromGoogle]]];
+	NSMutableURLRequest * postread = [NSMutableURLRequest requestWithURL:posturl];
 	[postread setTimeoutInterval:5.0];
 	if (isLeopard) {
 		[postread setHTTPShouldHandleCookies:NO];
@@ -1211,7 +1211,7 @@
 	}
 	[postread setValue:[self loginToGoogle] forHTTPHeaderField:@"Cookie"];
 	[postread setHTTPMethod:@"POST"];
-	NSURLConnection *markread = [NSURLConnection connectionWithRequest:postread delegate:self];
+	NSURLConnection * markread = [NSURLConnection connectionWithRequest:postread delegate:self];
 
 	// TODO: what to do here?
 	if (markread) {
@@ -1291,10 +1291,10 @@
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[[NSString stringWithFormat:@"%@://www.google.com/reader/preview/*/feed/", [self getURLPrefix]] stringByAppendingString:[NSString stringWithFormat:@"%@", CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)url, NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8)]]]];
 	} else {
 		// Here we should implement a check if there actually is no feed there :(
-		NSURL *posturl = [NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/quickadd", [self getURLPrefix]]];
-		NSMutableURLRequest *postread = [NSMutableURLRequest requestWithURL:posturl];
+		NSURL * posturl = [NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/quickadd", [self getURLPrefix]]];
+		NSMutableURLRequest * postread = [NSMutableURLRequest requestWithURL:posturl];
 		[postread setTimeoutInterval:5.0];
-		NSString *sendString = [NSString stringWithFormat:@"quickadd=%@&T=%@", CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)url, NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8), [self getTokenFromGoogle]];
+		NSString * sendString = [NSString stringWithFormat:@"quickadd=%@&T=%@", CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)url, NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8), [self getTokenFromGoogle]];
 		[postread setHTTPBody:[sendString dataUsingEncoding:NSUTF8StringEncoding]];
 	if (isLeopard) {
 		[postread setHTTPShouldHandleCookies:NO];
@@ -1303,10 +1303,10 @@
 	}
 		[postread setValue:[self loginToGoogle] forHTTPHeaderField:@"Cookie"];
 		[postread setHTTPMethod:@"POST"];
-		NSURLConnection *subscribeReq = [NSURLConnection connectionWithRequest:postread delegate:self];
+		NSURLConnection * subscribeReq = [NSURLConnection connectionWithRequest:postread delegate:self];
 		if (subscribeReq) {
 			// we need to sleep a little
-			NSDate *sleepUntil = [NSDate dateWithTimeIntervalSinceNow:1.5];
+			NSDate * sleepUntil = [NSDate dateWithTimeIntervalSinceNow:1.5];
 			[NSThread sleepUntilDate:sleepUntil];
 			[self checkNow:nil];	
 		} else {
@@ -1347,7 +1347,7 @@
 
 	[prefs setObject:[NSString stringWithString:[usernameField stringValue]] forKey:@"Username"];
 
-	NSString *password = [passwordField stringValue];
+	NSString * password = [passwordField stringValue];
 		
 	if ([Keychain checkForExistanceOfKeychain] > 0) {
 		[Keychain modifyKeychainItem:password];
@@ -1366,7 +1366,7 @@
 }
 
 - (NSString *)getURLPrefix {
-	NSString *returnString;
+	NSString * returnString;
 	if ([[prefs valueForKey:@"alwaysUseHttps"] boolValue] == YES) {
 		returnString = @"https";
 	} else {
@@ -1376,7 +1376,7 @@
 }
 
 - (NSString *)getUserPasswordFromKeychain {
-	NSString *password;
+	NSString * password;
 	if ([Keychain checkForExistanceOfKeychain] < 1) {
 		password = @"";
 	} else {
@@ -1386,26 +1386,26 @@
 }
 
 - (NSAttributedString *)makeAttributedStatusItemString:(NSString *)text {
-	NSDictionary *statusAttrsDictionary;
+	NSDictionary * statusAttrsDictionary;
 	if ([[prefs valueForKey:@"smallStatusItemFont"] boolValue] == YES) {
 		statusAttrsDictionary = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSFont fontWithName:@"Lucida Grande" size:12.0], [NSNumber numberWithFloat:-0.0], nil] forKeys:[NSArray arrayWithObjects: NSFontAttributeName, NSBaselineOffsetAttributeName, nil ]];
 	} else {	
 		statusAttrsDictionary = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSFont fontWithName:@"Lucida Grande" size:14.0], [NSNumber numberWithFloat:-0.0], nil] forKeys:[NSArray arrayWithObjects: NSFontAttributeName, NSBaselineOffsetAttributeName, nil ]];
 	}
 
-	NSMutableAttributedString *newString = [[[NSMutableAttributedString alloc] initWithString:text attributes:statusAttrsDictionary] autorelease];
+	NSMutableAttributedString * newString = [[[NSMutableAttributedString alloc] initWithString:text attributes:statusAttrsDictionary] autorelease];
 	return newString;
 }
 
 - (NSAttributedString *)makeAttributedMenuString:(NSString *)bigtext:(NSString *)smalltext {
 	
 	bigtext = [self flattenHTML:bigtext];
-	NSMutableAttributedString *newString = [[[NSMutableAttributedString alloc] initWithString:bigtext attributes:normalAttrsDictionary] autorelease];
+	NSMutableAttributedString * newString = [[[NSMutableAttributedString alloc] initWithString:bigtext attributes:normalAttrsDictionary] autorelease];
 		
 	if ([smalltext length] > 0) {
 		smalltext = [self flattenHTML:smalltext];
 
-		NSAttributedString *smallString = [[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@" - %@", smalltext] attributes:smallAttrsDictionary];
+		NSAttributedString * smallString = [[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@" - %@", smalltext] attributes:smallAttrsDictionary];
 		[newString appendAttributedString:smallString];
 		[smallString release];
 	}
@@ -1460,11 +1460,11 @@
 
 
 - (NSDictionary *)registrationDictionaryForGrowl {
-	NSArray *notifications = [NSArray arrayWithObjects:
+	NSArray * notifications = [NSArray arrayWithObjects:
 		NSLocalizedString(@"New Unread Items",nil),
 		NSLocalizedString(@"New Subscription",nil),
 		nil];
-	NSDictionary *regDict = [NSDictionary dictionaryWithObjectsAndKeys:
+	NSDictionary * regDict = [NSDictionary dictionaryWithObjectsAndKeys:
 		@"Google Reader Notifier", GROWL_APP_NAME,
 		notifications, GROWL_NOTIFICATIONS_ALL,
 		notifications, GROWL_NOTIFICATIONS_DEFAULT,
@@ -1485,7 +1485,7 @@
 
 - (void)setupEventHandlers {
     // Register to receive the 'GURL''GURL' event
-    NSAppleEventManager *manager = [NSAppleEventManager sharedAppleEventManager];
+    NSAppleEventManager * manager = [NSAppleEventManager sharedAppleEventManager];
 	if (manager) {
 		[manager setEventHandler:self andSelector:@selector(handleOpenLocationAppleEvent:withReplyEvent:) forEventClass:'GURL' andEventID:'GURL'];
 	}
@@ -1494,11 +1494,11 @@
 - (void)handleOpenLocationAppleEvent:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)reply {
 	
     // get the descriptor
-    NSAppleEventDescriptor *directObjectDescriptor = [event paramDescriptorForKeyword:keyDirectObject];
+    NSAppleEventDescriptor * directObjectDescriptor = [event paramDescriptorForKeyword:keyDirectObject];
     if ( directObjectDescriptor ) {
 		
 		// get the complete string
-		NSString *urlString = [directObjectDescriptor stringValue];
+		NSString * urlString = [directObjectDescriptor stringValue];
 		if ( urlString ) {
 			NSScanner * scanner = [NSScanner scannerWithString:urlString];
 			NSString * urlPrefix;
@@ -1529,7 +1529,7 @@
 }
 
 - (IBAction)selectTorrentCastFolder:(id)sender {
-	NSOpenPanel *op = [[NSOpenPanel openPanel] retain];
+	NSOpenPanel * op = [[NSOpenPanel openPanel] retain];
 	
 	[op setCanChooseDirectories:YES];
 	[op setCanChooseFiles:NO];
@@ -1540,9 +1540,9 @@
 
 - (void)selectTorrentCastFolderEnded:(NSOpenPanel*)panel returnCode:(int)returnCode contextInfo:(void*)contextInfo {
 	if (returnCode == NSOKButton) {
-		NSArray*		paths = [panel filenames];
-		NSEnumerator*	iter = [paths objectEnumerator];
-		NSString*		path;
+		NSArray * paths = [panel filenames];
+		NSEnumerator * iter = [paths objectEnumerator];
+		NSString * path;
 		
 		while ((path = [iter nextObject]) != NULL) {
 			torrentCastFolderPathString = path;
