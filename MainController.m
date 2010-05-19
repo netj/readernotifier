@@ -4,19 +4,17 @@
 //
 //
 
-// Logging
+#import "MainController.h"
+#import "Keychain.h"
 
+// Logging
 #ifdef DEBUG
 #   define DLog(fmt, ...) NSLog((@"%s [Line %d] " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__);
 #else
 #   define DLog(...)
 #endif
-
 // ALog always displays output regardless of the DEBUG setting
 #define ALog(fmt, ...) NSLog((@"%s [Line %d] " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__);
-
-#import "MainController.h"
-#import "Keychain.h"
 
 // 27 with special icons, 29 else
 #define ourStatusItemWithLength 29
@@ -34,6 +32,8 @@
 @end
 
 @implementation MainController
+
+#pragma mark MemoryManagement
 
 - (id)init {
 	[super init];
@@ -68,26 +68,19 @@
 	return self;
 }
 
-- (void)notificationTest1 {
-	[self performSelectorOnMainThread:@selector(updateMenu) withObject:nil waitUntilDone:NO];
-}
-
-- (void)notificationTest2 {
-		NSDate * sleepUntil = [NSDate dateWithTimeIntervalSinceNow:8.0];
-		[NSThread sleepUntilDate:sleepUntil];
-
-		[lastCheckTimer invalidate];
-		[self createLastCheckTimer];
-		[lastCheckTimer fire];
-}
-
-- (void)windowWillClose:(NSNotification *)aNotification {
-	// TODO: used?
+- (void)dealloc {
+    [statusItem release];
+    [mainTimer invalidate];
+    [mainTimer release];
+	[lastCheckTimer invalidate];
+	[lastCheckTimer release];
+	[prefs release];
+    [super dealloc];
 }
 
 - (void)awakeFromNib {
 	[NSApp activateIgnoringOtherApps:YES];
-
+	
 	// Get system version
 	NSDictionary * dict = [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
 	NSString * versionString = [dict objectForKey:@"ProductVersion"];
@@ -95,24 +88,24 @@
 	int count = [array count];
 	int major = (count >= 1) ? [[array objectAtIndex:0] intValue] : 0;
 	int minor = (count >= 2) ? [[array objectAtIndex:1] intValue] : 0;
-
+	
 	if (major > 10 || major == 10 && minor >= 5) {
 		isLeopard = YES;
 	} else {
 		isLeopard = NO;
 	}
-		
+	
 	// Growl
 	[GrowlApplicationBridge setGrowlDelegate:self];
 	
 	[prefs setObject:@"" forKey:@"storedSID"];
-
+	
 	if ([[prefs valueForKey:@"useColoredNoUnreadItemsIcon"] intValue] == 1) {
 		nounreadItemsImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"nounreadalt" ofType:@"png"]];	
 	} else {
 		nounreadItemsImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"nounread" ofType:@"png"]];
 	}
-
+	
 	if ([[prefs valueForKey:@"useColoredNoUnreadItemsIcon"] intValue] == 2) {
 		unreadItemsImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"nounread" ofType:@"png"]];
 		errorImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"bwerror" ofType:@"png"]];
@@ -122,7 +115,7 @@
 	}
 	
 	highlightedImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"highunread" ofType:@"png"]];
-
+	
 	statusItem = [[[NSStatusBar systemStatusBar] statusItemWithLength:ourStatusItemWithLength] retain]; //NSVariableStatusItemLength] retain];
 	[statusItem setHighlightMode:YES];
 	[statusItem setTitle:@""];
@@ -130,7 +123,7 @@
     [statusItem setImage:nounreadItemsImage];
     [statusItem setAlternateImage:highlightedImage];
 	[statusItem setEnabled:YES];
-
+	
 	user = [[NSMutableArray alloc] init];
 	titles = [[NSMutableArray alloc] init];
 	links = [[NSMutableArray alloc] init];
@@ -178,12 +171,182 @@
 	infoDictionary = [[NSBundle mainBundle] infoDictionary];
 	
 	DLog(@"Hello. %@ Build %@", [infoDictionary objectForKey:@"CFBundleName"], [infoDictionary objectForKey:@"CFBundleVersion"]);
-
+	
 	if ([prefs valueForKey:@"torrentCastFolderPath"] != NULL) {
 		[torrentCastFolderPath setStringValue:[prefs valueForKey:@"torrentCastFolderPath"]];
 	}
 	
 	DLog(@"We're on %@", [[NSProcessInfo processInfo] operatingSystemVersionString]);
+}
+
+#pragma mark -
+#pragma mark IBAction methods
+
+- (IBAction)checkNow:(id)sender {	
+	// first we check if the user has put in a password and username beforehand
+	if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
+		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
+		[self errorImageOn];
+		storedSID = @"";
+	} else if ([[prefs valueForKey:@"Username"] isEqualToString:@""] || [prefs valueForKey:@"Username"] == NULL) {
+		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
+		[self errorImageOn];
+		storedSID = @"";
+	} else {
+		// then we make sure it has validated and provided us with a login
+		if (![[self loginToGoogle] isEqualToString:@""]) {
+			// then we make sure that it's not already running
+			if (currentlyFetchingAndUpdating != YES) {
+				// threading
+				[mainTimer invalidate];	
+				[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
+				[NSThread detachNewThreadSelector:@selector(retrieveGoogleFeed) toTarget:self withObject:nil];
+			}
+		}
+	}
+}
+
+- (IBAction)launchSite:(id)sender {
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/accounts/SetSID?ssdc=1&sidt=%@&continue=http%%3A%%2F%%2Fgoogle.com%%2Freader%%2Fview%%2F", [self getGoogleSIDClean]]]];
+}
+
+- (IBAction)openAllItems:(id)sender {
+	currentlyFetchingAndUpdating = YES;
+	[statusItem setMenu:tempMenuSec];
+	
+	int j = 0;
+	for (j = 0; j < [results count]; j++) {
+		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:[[results objectAtIndex:j] intValue]]]];	
+	}
+	[NSThread detachNewThreadSelector:@selector(markResultsAsReadDetached) toTarget:self withObject:nil];
+}
+
+- (IBAction)markAllAsRead:(id)sender {
+	DLog(@"markAllAsRead begin");
+	currentlyFetchingAndUpdating = YES;
+	[statusItem setMenu:tempMenuSec];
+	[NSThread detachNewThreadSelector:@selector(markAllAsReadDetached) toTarget:self withObject:nil];
+	DLog(@"markAllAsRead end");
+}
+
+- (IBAction)launchLink:(id)sender {
+	DLog(@"launchLink begin");
+	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored (we make use of the id - and hopefully it will be an absolute). 
+	if ([ids containsObject:[sender title]]) {
+		currentlyFetchingAndUpdating = YES;
+		[statusItem setMenu:tempMenuSec];
+		if ([[prefs valueForKey:@"showCount"] boolValue] == YES) {
+			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d",[results count]-1]]];
+		}
+		int index = [ids indexOfObjectIdenticalTo:[sender title]];
+		
+		DLog(@"Index is %d", index);
+		DLog(@"NUMBER OF ITEMS IS, %d", [GRMenu numberOfItems]);
+		
+		if ([GRMenu numberOfItems] == 9) {
+			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
+			[GRMenu removeItemAtIndex:index+indexOfPreviewFields]; // the shaddow (optional-click
+			[GRMenu removeItemAtIndex:index+indexOfPreviewFields]; // the space-line
+		} else {
+			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
+		}
+		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:index]]];
+		[NSThread detachNewThreadSelector:@selector(markOneAsReadDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];
+	} else {
+		DLog(@"Item has already gone away, so we cannot refetch it");
+	}
+	DLog(@"launchLink end");	
+}
+
+- (IBAction)doOptionalActionFromMenu:(id)sender {
+	currentlyFetchingAndUpdating = YES;
+	[statusItem setMenu:tempMenuSec];
+	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored (we make use of the id - and hopefully it will be an absolute). 
+	if ([ids containsObject:[sender title]]) {
+		int index = [ids indexOfObjectIdenticalTo:[sender title]];
+		if ([[prefs valueForKey:@"onOptionalActAlsoStarItem"] boolValue] == YES) {
+			[NSThread detachNewThreadSelector:@selector(markOneAsStarredDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];
+		} else {
+			[NSThread detachNewThreadSelector:@selector(markOneAsReadDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];		
+		}
+	} else {
+		currentlyFetchingAndUpdating = NO;
+		DLog(@"Item has already gone away, so we cannot refetch it");
+	}
+}
+
+- (IBAction)launchErrorHelp:(id)sender {
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://troelsbay.eu/software/reader"]];
+}
+
+- (IBAction)openPrefs:(id)sender {
+	[NSApp activateIgnoringOtherApps:YES];
+	[preferences makeKeyAndOrderFront:nil];
+}
+
+- (IBAction)openAddFeedWindow:(id)sender {
+	[NSApp activateIgnoringOtherApps:YES];
+	[addfeedwindow makeKeyAndOrderFront:nil];
+	[addNewFeedUrlField setStringValue:@"http://"];
+}
+
+- (IBAction)addFeedFromUI:(id)sender {
+	[addfeedwindow close];
+	
+	[self addFeed:[addNewFeedUrlField stringValue]];
+}
+
+- (IBAction)checkGoogleAuth:(id)sender {
+	storedSID = @"";
+	
+	[prefs setObject:[NSString stringWithString:[usernameField stringValue]] forKey:@"Username"];
+	
+	NSString * password = [passwordField stringValue];
+	
+	if ([Keychain checkForExistanceOfKeychain] > 0) {
+		[Keychain modifyKeychainItem:password];
+	} else {
+		[Keychain addKeychainItem:password];
+	}
+	
+	if (![[self loginToGoogle] isEqualToString:@""]) {
+		[self displayAlert:NSLocalizedString(@"Success",nil):NSLocalizedString(@"You are now connected to Google",nil)];
+		[mainTimer invalidate];
+		[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
+		[mainTimer fire];
+	} else {
+		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"Unable to connect to Google with user details",nil)];	
+	}
+}
+
+- (IBAction)selectTorrentCastFolder:(id)sender {
+	NSOpenPanel * op = [[NSOpenPanel openPanel] retain];
+	
+	[op setCanChooseDirectories:YES];
+	[op setCanChooseFiles:NO];
+	[op setAllowsMultipleSelection:NO];
+	[op setResolvesAliases:NO];
+	[op beginSheetForDirectory:nil file:@"" types:nil modalForWindow:preferences modalDelegate:self didEndSelector:@selector(selectTorrentCastFolderEnded:returnCode:contextInfo:) contextInfo:nil];
+}
+
+#pragma mark -
+#pragma mark Others
+
+- (void)notificationTest1 {
+	[self performSelectorOnMainThread:@selector(updateMenu) withObject:nil waitUntilDone:NO];
+}
+
+- (void)notificationTest2 {
+		NSDate * sleepUntil = [NSDate dateWithTimeIntervalSinceNow:8.0];
+		[NSThread sleepUntilDate:sleepUntil];
+
+		[lastCheckTimer invalidate];
+		[self createLastCheckTimer];
+		[lastCheckTimer fire];
+}
+
+- (void)windowWillClose:(NSNotification *)aNotification {
+	// TODO: used?
 }
 
 - (void)createLastCheckTimer {
@@ -237,6 +400,9 @@
 		lastCheckMinute++;
 	}
 }
+
+#pragma mark -
+#pragma mark Netowrk methods
 
 - (NSString *)sendConnectionRequest:(NSString *)urlToConnectTo:(BOOL)handleCookies:(NSString *)cookieValue:(NSString *)theHTTPMethod:(NSString *)theHTTPBody {
 	NSError * error = nil;
@@ -918,35 +1084,6 @@
 	[pool release];
 }
 
-- (IBAction)checkNow:(id)sender {	
-	// first we check if the user has put in a password and username beforehand
-	if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
-		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
-		[self errorImageOn];
-		storedSID = @"";
-	} else if ([[prefs valueForKey:@"Username"] isEqualToString:@""] || [prefs valueForKey:@"Username"] == NULL) {
-		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
-		[self errorImageOn];
-		storedSID = @"";
-	} else {
-		// then we make sure it has validated and provided us with a login
-		if (![[self loginToGoogle] isEqualToString:@""]) {
-			// then we make sure that it's not already running
-			if (currentlyFetchingAndUpdating != YES) {
-				// threading
-				[mainTimer invalidate];	
-				[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
-				[NSThread detachNewThreadSelector:@selector(retrieveGoogleFeed) toTarget:self withObject:nil];
-			}
-		}
-	}
-}
-
-
-- (IBAction)launchSite:(id)sender {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/accounts/SetSID?ssdc=1&sidt=%@&continue=http%%3A%%2F%%2Fgoogle.com%%2Freader%%2Fview%%2F", [self getGoogleSIDClean]]]];
-}
-
 - (NSString *)getTokenFromGoogle {
 	return [self sendConnectionRequest:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/token", [self getURLPrefix]]:YES:[self loginToGoogle]:@"GET":@""];	
 }
@@ -1022,17 +1159,6 @@
 	[pool release];
 }
 
-- (IBAction)openAllItems:(id)sender {
-	currentlyFetchingAndUpdating = YES;
-	[statusItem setMenu:tempMenuSec];
-
-	int j = 0;
-	for (j = 0; j < [results count]; j++) {
-		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:[[results objectAtIndex:j] intValue]]]];	
-	}
-	[NSThread detachNewThreadSelector:@selector(markResultsAsReadDetached) toTarget:self withObject:nil];
-}
-
 - (void)markAllAsReadDetached {
 	// threading
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
@@ -1057,60 +1183,6 @@
 		}
 	}
 	[pool release];
-}
-
-- (IBAction)markAllAsRead:(id)sender {
-	DLog(@"markAllAsRead begin");
-	currentlyFetchingAndUpdating = YES;
-	[statusItem setMenu:tempMenuSec];
-	[NSThread detachNewThreadSelector:@selector(markAllAsReadDetached) toTarget:self withObject:nil];
-	DLog(@"markAllAsRead end");
-}
-
-- (IBAction)launchLink:(id)sender {
-	DLog(@"launchLink begin");
-	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored (we make use of the id - and hopefully it will be an absolute). 
-	if ([ids containsObject:[sender title]]) {
-		currentlyFetchingAndUpdating = YES;
-		[statusItem setMenu:tempMenuSec];
-		if ([[prefs valueForKey:@"showCount"] boolValue] == YES) {
-			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d",[results count]-1]]];
-		}
-		int index = [ids indexOfObjectIdenticalTo:[sender title]];
-		
-		DLog(@"Index is %d", index);
-		DLog(@"NUMBER OF ITEMS IS, %d", [GRMenu numberOfItems]);
-		
-		if ([GRMenu numberOfItems] == 9) {
-			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
-			[GRMenu removeItemAtIndex:index+indexOfPreviewFields]; // the shaddow (optional-click
-			[GRMenu removeItemAtIndex:index+indexOfPreviewFields]; // the space-line
-		} else {
-			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
-		}
-		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:index]]];
-		[NSThread detachNewThreadSelector:@selector(markOneAsReadDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];
-	} else {
-		DLog(@"Item has already gone away, so we cannot refetch it");
-	}
-	DLog(@"launchLink end");	
-}
-
-- (IBAction)doOptionalActionFromMenu:(id)sender {
-	currentlyFetchingAndUpdating = YES;
-	[statusItem setMenu:tempMenuSec];
-	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored (we make use of the id - and hopefully it will be an absolute). 
-	if ([ids containsObject:[sender title]]) {
-		int index = [ids indexOfObjectIdenticalTo:[sender title]];
-		if ([[prefs valueForKey:@"onOptionalActAlsoStarItem"] boolValue] == YES) {
-			[NSThread detachNewThreadSelector:@selector(markOneAsStarredDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];
-		} else {
-			[NSThread detachNewThreadSelector:@selector(markOneAsReadDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];		
-		}
-	} else {
-		currentlyFetchingAndUpdating = NO;
-		DLog(@"Item has already gone away, so we cannot refetch it");
-	}
 }
 
 - (void)removeOneItemFromMenu:(int)index {
@@ -1288,10 +1360,6 @@
 	return array;
 }
 
-- (IBAction)launchErrorHelp:(id)sender {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://troelsbay.eu/software/reader"]];
-}
-
 - (void)addFeed:(NSString *)url {
 	if ([[prefs valueForKey:@"dontVerifySubscription"] boolValue] != YES) {
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[[NSString stringWithFormat:@"%@://www.google.com/reader/preview/*/feed/", [self getURLPrefix]] stringByAppendingString:[NSString stringWithFormat:@"%@", CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)url, NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8)]]]];
@@ -1318,56 +1386,6 @@
 		} else {
 			DLog(@"Oops, the subscription did not make it through");
 		}
-	}
-}
-
-- (IBAction)openPrefs:(id)sender {
-	[NSApp activateIgnoringOtherApps:YES];
-	[preferences makeKeyAndOrderFront:nil];
-}
-
-- (IBAction)openAddFeedWindow:(id)sender {
-	[NSApp activateIgnoringOtherApps:YES];
-	[addfeedwindow makeKeyAndOrderFront:nil];
-	[addNewFeedUrlField setStringValue:@"http://"];
-}
-
-- (IBAction)addFeedFromUI:(id)sender {
-	[addfeedwindow close];
-
-	[self addFeed:[addNewFeedUrlField stringValue]];
-}
-
-- (void)dealloc {
-    [statusItem release];
-    [mainTimer invalidate];
-    [mainTimer release];
-	[lastCheckTimer invalidate];
-	[lastCheckTimer release];
-	[prefs release];
-    [super dealloc];
-}
-
-- (IBAction)checkGoogleAuth:(id)sender {
-	storedSID = @"";
-
-	[prefs setObject:[NSString stringWithString:[usernameField stringValue]] forKey:@"Username"];
-
-	NSString * password = [passwordField stringValue];
-		
-	if ([Keychain checkForExistanceOfKeychain] > 0) {
-		[Keychain modifyKeychainItem:password];
-	} else {
-		[Keychain addKeychainItem:password];
-	}
-	
-	if (![[self loginToGoogle] isEqualToString:@""]) {
-		[self displayAlert:NSLocalizedString(@"Success",nil):NSLocalizedString(@"You are now connected to Google",nil)];
-		[mainTimer invalidate];
-		[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
-		[mainTimer fire];
-	} else {
-		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"Unable to connect to Google with user details",nil)];	
 	}
 }
 
@@ -1530,16 +1548,6 @@
 			}
 		}
 	}
-}
-
-- (IBAction)selectTorrentCastFolder:(id)sender {
-	NSOpenPanel * op = [[NSOpenPanel openPanel] retain];
-	
-	[op setCanChooseDirectories:YES];
-	[op setCanChooseFiles:NO];
-	[op setAllowsMultipleSelection:NO];
-	[op setResolvesAliases:NO];
-	[op beginSheetForDirectory:nil file:@"" types:nil modalForWindow:preferences modalDelegate:self didEndSelector:@selector(selectTorrentCastFolderEnded:returnCode:contextInfo:) contextInfo:nil];
 }
 
 - (void)selectTorrentCastFolderEnded:(NSOpenPanel*)panel returnCode:(int)returnCode contextInfo:(void*)contextInfo {

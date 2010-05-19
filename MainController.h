@@ -99,6 +99,7 @@
 - (void)lastTimeCheckedTimer:(NSTimer *)timer;
 - (void)selectTorrentCastFolderEnded:(NSOpenPanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 - (void)checkNowWithDelayDetached:(NSNumber *)delay;
+- (NSString *)getGoogleSIDClean;
 
 
 - (IBAction)launchSite:(id)sender;
