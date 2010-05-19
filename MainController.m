@@ -21,7 +21,7 @@
 @end
 
 @implementation Delegate
-- (void) sound: (NSSound *) sound didFinishPlaying: (BOOL) aBool {}
+- (void) sound:(NSSound *)sound didFinishPlaying:(BOOL)aBool {}
 @end
 
 @implementation MainController
@@ -1523,9 +1523,7 @@
 				}
 			}
 		}
-		
 	}
-	
 }
 
 - (IBAction)selectTorrentCastFolder:(id)sender {
