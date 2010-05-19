@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		495B263B11A427E500EE4BEB /* IPMPendingConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 495B263A11A427E500EE4BEB /* IPMPendingConnection.m */; };
+		495B263F11A4285A00EE4BEB /* IPMNetworkManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 495B263E11A4285A00EE4BEB /* IPMNetworkManager.m */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
@@ -62,6 +64,12 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* Reader Notifier_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Reader Notifier_Prefix.pch"; sourceTree = "<group>"; };
+		495B263911A427E500EE4BEB /* IPMPendingConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMPendingConnection.h; sourceTree = "<group>"; };
+		495B263A11A427E500EE4BEB /* IPMPendingConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMPendingConnection.m; sourceTree = "<group>"; };
+		495B263C11A427FB00EE4BEB /* IPMNetworkManagerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManagerDelegate.h; sourceTree = "<group>"; };
+		495B263D11A4285A00EE4BEB /* IPMNetworkManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManager.h; sourceTree = "<group>"; };
+		495B263E11A4285A00EE4BEB /* IPMNetworkManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMNetworkManager.m; sourceTree = "<group>"; };
+		495B266511A42B4200EE4BEB /* IPMConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMConfiguration.h; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* Reader Notifier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Reader Notifier.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A8BB46F0DCA43F8003AD06B /* Russian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Russian; path = Russian.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -106,6 +114,12 @@
 			children = (
 				C7F2B6490B0A5E8300790961 /* Keychain.h */,
 				C7F2B64A0B0A5E8300790961 /* Keychain.m */,
+				495B266511A42B4200EE4BEB /* IPMConfiguration.h */,
+				495B263D11A4285A00EE4BEB /* IPMNetworkManager.h */,
+				495B263E11A4285A00EE4BEB /* IPMNetworkManager.m */,
+				495B263C11A427FB00EE4BEB /* IPMNetworkManagerDelegate.h */,
+				495B263911A427E500EE4BEB /* IPMPendingConnection.h */,
+				495B263A11A427E500EE4BEB /* IPMPendingConnection.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -275,6 +289,8 @@
 				8D11072D0486CEB800E47090 /* main.m in Sources */,
 				C7C90A5E0AFA790F0080D14F /* MainController.m in Sources */,
 				C7F2B64B0B0A5E8300790961 /* Keychain.m in Sources */,
+				495B263B11A427E500EE4BEB /* IPMPendingConnection.m in Sources */,
+				495B263F11A4285A00EE4BEB /* IPMNetworkManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -374,6 +390,8 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
 				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Reader Notifier_Prefix.pch";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				OTHER_CFLAGS = "-DDEBUG";
@@ -387,6 +405,8 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
 				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Reader Notifier_Prefix.pch";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PREBINDING = NO;
