@@ -681,7 +681,9 @@
 					[feedstring release];
 					
 					if ([[prefs valueForKey:@"openTorrentAfterDownloading"] boolValue] == YES) {
-						DLog([NSString stringWithFormat:@"%@/%@", [prefs valueForKey:@"torrentCastFolderPath"], [NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]]);
+						DLog(@"%@", [NSString stringWithFormat:@"%@/%@", 
+									 [prefs valueForKey:@"torrentCastFolderPath"], 
+									 [NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]]);
 						[[NSWorkspace sharedWorkspace] openFile:[NSString stringWithFormat:@"%@/%@", [prefs valueForKey:@"torrentCastFolderPath"], [NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]]];
 					}					
 					
