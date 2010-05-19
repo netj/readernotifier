@@ -11,7 +11,6 @@
 #import <Growl/Growl.h>
 #import <IOKit/IOKitLib.h>
 
-
 @interface MainController : NSObject <GrowlApplicationBridgeDelegate> {
 	NSStatusItem *statusItem;
     IBOutlet NSSecureTextField *passwordField;
@@ -39,7 +38,6 @@
 	NSMutableArray *newItems;
 	NSError *xmlError;
 	NSString *storedSID;
-//	NSMutableString *storedUserNo;
 	NSSound *theSound;
 	NSImage *unreadItemsImage;
 	NSImage *highlightedImage;
@@ -98,7 +96,6 @@
 - (void)growlNotificationWasClicked:(id)clickContext;
 - (NSDictionary *)registrationDictionaryForGrowl;
 - (NSString *)trimDownString:(NSString *)stringToTrim:(int)maxLength;
-// - (IBAction)setLoginItem:(id)sender;
 - (void)setupEventHandlers;
 - (void)handleOpenLocationAppleEvent:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)reply;
 - (IBAction)openAddFeedWindow:(id)sender;
