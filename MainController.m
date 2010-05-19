@@ -4,6 +4,17 @@
 //
 //
 
+// Logging
+
+#ifdef DEBUG
+#   define DLog(fmt, ...) NSLog((@"%s [Line %d] " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__);
+#else
+#   define DLog(...)
+#endif
+
+// ALog always displays output regardless of the DEBUG setting
+#define ALog(fmt, ...) NSLog((@"%s [Line %d] " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__);
+
 #import "MainController.h"
 #import "Keychain.h"
 
@@ -14,8 +25,6 @@
 #define itemsExclPreviewFields 6
 #define maxLettersInSummary 500
 #define maxLettersInSource 20
-
-#define runningDebug 0 // TODO: making this a compile-time option?
 
 @interface Delegate : NSObject {}
 @end
@@ -168,14 +177,13 @@
     NSDictionary * infoDictionary;
 	infoDictionary = [[NSBundle mainBundle] infoDictionary];
 	
-	if (runningDebug == 1) NSLog(@"Hello. %@ Build %@", [infoDictionary objectForKey:@"CFBundleName"], [infoDictionary objectForKey:@"CFBundleVersion"]);
+	DLog(@"Hello. %@ Build %@", [infoDictionary objectForKey:@"CFBundleName"], [infoDictionary objectForKey:@"CFBundleVersion"]);
 
 	if ([prefs valueForKey:@"torrentCastFolderPath"] != NULL) {
 		[torrentCastFolderPath setStringValue:[prefs valueForKey:@"torrentCastFolderPath"]];
 	}
 	
-	NSProcessInfo * procInfo = [NSProcessInfo processInfo];
-	if (runningDebug == 1) NSLog(@"We're on %@", [procInfo operatingSystemVersionString]);
+	DLog(@"We're on %@", [[NSProcessInfo processInfo] operatingSystemVersionString]);
 }
 
 - (void)createLastCheckTimer {
@@ -206,11 +214,11 @@
 
 - (void)lastTimeCheckedTimer:(NSTimer *)timer {
 	if (lastCheckMinute > [[prefs valueForKey:@"timeDelay"] intValue]) {
-		if (runningDebug == 1) NSLog(@"lastTimeChecked is more than it should be, so we run update");
+		DLog(@"lastTimeChecked is more than it should be, so we run update");
 		if (currentlyFetchingAndUpdating != YES)
 			[NSThread detachNewThreadSelector:@selector(checkNow:) toTarget:self withObject:nil];
 	} else {
-		if (runningDebug == 1) NSLog(@"lastTimeCheckedTimer run %d", lastCheckMinute);
+		DLog(@"lastTimeCheckedTimer run %d", lastCheckMinute);
 		if (lastCheckMinute == 0) {
 			[self displayLastTimeMessage:[NSString stringWithString:NSLocalizedString(@"Checked less than 1 min ago",nil)]]; /* ok */
 		} else if (lastCheckMinute == 1) {
@@ -259,7 +267,7 @@
 }
 
 - (int)getUnreadCount {
-	if (runningDebug == 1) NSLog(@"Total count (getUnreadCount) method initiated");
+	DLog(@"Total count (getUnreadCount) method initiated");
 	// since .99 this has provided a memory error (case of Moore).
 	// we've tried to fix it with releasing atomdoc2 and temparray5 (and not releasing dstring)
 	// http://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=json&ck=1165697710220&client=scroll
@@ -285,16 +293,16 @@
 	
 	if (newError==nil) {
 		NSXMLDocument * atomdoc2 = [[NSXMLDocument alloc] initWithData:newDataReply options:0 error:&xmlError];	
-		if (runningDebug == 1) NSLog(@"getUnreadCount1");
+		DLog(@"getUnreadCount1");
 		NSMutableArray * tempArray5 = [[NSMutableArray alloc] init];
 		
-		if (runningDebug == 1) NSLog(@"getUnreadCount2");
+		DLog(@"getUnreadCount2");
 
 		// if the user is on labels, use that to check instead!
 		if ([[prefs valueForKey:@"Label"] isEqualToString:@""]) {
 			[tempArray5 addObjectsFromArray:[atomdoc2 objectsForXQuery:@"for $x in /object/list/object where $x/string[contains(., 'reading-list')] return $x/number[@name=\"count\"]/text()" error:NULL]];  // peters add
 		} else {
-			if (runningDebug == 1) NSLog(@"getUnreadCount haslabel");
+			DLog(@"getUnreadCount haslabel");
 			[tempArray5 addObjectsFromArray:[atomdoc2 objectsForXQuery:[NSString stringWithFormat:@"for $x in /object/list/object where $x/string[contains(., '/label/%@')] return $x/number[@name=\"count\"]/text()", [prefs valueForKey:@"Label"]] error:NULL]]; // peters add
 		}
 		
@@ -306,12 +314,12 @@
 			t = t + [dString intValue];
 		}
 		
-		if (runningDebug == 1) NSLog(@"getUnreadCount3");
+		DLog(@"getUnreadCount3");
 
 		[tempArray5 release];
 		[atomdoc2 release];
 		
-		if (runningDebug == 1) NSLog(@"The total count of unread items is now %d", t);
+		DLog(@"The total count of unread items is now %d", t);
 
 		totalUnreadItemsInGRInterface = t;
 	} else {
@@ -331,7 +339,7 @@
 - (void)retrieveGoogleFeed {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	
-	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed begin");
+	DLog(@"retrieveGoogleFeed begin");
 
 	currentlyFetchingAndUpdating = YES;
 	[statusItem setMenu:tempMenuSec];
@@ -394,7 +402,7 @@
 	[feeds addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/@gr:stream-id" error:NULL]];
 	[user addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/id/text()" error:NULL]];
 	
-	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed 1");
+	DLog(@"retrieveGoogleFeed 1");
 	
 	int k = 0;
 	for(k = 0; k < [titles count]; k++) {
@@ -407,7 +415,7 @@
 		[tempArray0 release];
 	}
 
-	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed 2");
+	DLog(@"retrieveGoogleFeed 2");
 	
 	int m = 0;
 	for (m = 0; m < [titles count]; m++) {
@@ -426,7 +434,7 @@
 		[tempArray2 release];
 	}
 	
-	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed 2a");
+	DLog(@"retrieveGoogleFeed 2a");
 
 	// torrentcasting
 	int l;
@@ -440,23 +448,23 @@
 		[tempArray2 release];
 	}
 
-	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed 3");
+	DLog(@"retrieveGoogleFeed 3");
 	int j = 0;
 	for(j = 0; j < [feeds count]; j++) {
 		[feeds replaceObjectAtIndex:j withObject:[[feeds objectAtIndex:j] stringValue]];
 	}
 	
-	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed 4");
+	DLog(@"retrieveGoogleFeed 4");
 	int d;
 	for(d=0; d<[ids count]; d++){
 		[ids replaceObjectAtIndex:d withObject:[[ids objectAtIndex:d] stringValue]];
 	}
 
 		
-	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed 5");
+	DLog(@"retrieveGoogleFeed 5");
 	[atomdoc release];
 
-	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed 6");
+	DLog(@"retrieveGoogleFeed 6");
 
 	if (xmlError != nil) {
 		// TODO: something here?
@@ -469,7 +477,7 @@
 			//  ! we could actually skip all the maxItems checks later, but they're nice to have.
 			/// UPDATE! We do not reverse it any longer! So now we just remove the last item
 
-			if (runningDebug == 1) NSLog(@"retrieveGoogleFeed 6");
+			DLog(@"retrieveGoogleFeed 6");
 
 			if ([ids count] > 0) {
 				[titles removeLastObject];
@@ -481,7 +489,7 @@
 				[torrentcastlinks removeLastObject];
 			}
 			
-			if (runningDebug == 1) NSLog(@"retrieveGoogleFeed 7");
+			DLog(@"retrieveGoogleFeed 7");
 			
 			// while we know that there are extra unread items, we want to get the exact count of them, 
 			// the totalUnreadItemsInGRInterface will be updated automatically
@@ -496,7 +504,7 @@
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
 	}
 	
-	if (runningDebug == 1) NSLog(@"retrieveGoogleFeed end");
+	DLog(@"retrieveGoogleFeed end");
 	// threading
 	[pool release];
 }
@@ -513,7 +521,7 @@
 	[lastCheckTimer fire];
 
 	
-	if (runningDebug == 1) NSLog(@"updateMenu begin");
+	DLog(@"updateMenu begin");
 
 	currentlyFetchingAndUpdating = YES;
 	
@@ -545,7 +553,7 @@
 					[feedstring release];
 					
 					if ([[prefs valueForKey:@"openTorrentAfterDownloading"] boolValue] == YES) {
-						if (runningDebug == 1) NSLog([NSString stringWithFormat:@"%@/%@", [prefs valueForKey:@"torrentCastFolderPath"], [NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]]);
+						DLog([NSString stringWithFormat:@"%@/%@", [prefs valueForKey:@"torrentCastFolderPath"], [NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]]);
 						[[NSWorkspace sharedWorkspace] openFile:[NSString stringWithFormat:@"%@/%@", [prefs valueForKey:@"torrentCastFolderPath"], [NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]]];
 					}					
 					
@@ -711,14 +719,14 @@
 	
 	[statusItem setMenu:GRMenu];
 	currentlyFetchingAndUpdating = NO;
-	if (runningDebug == 1) NSLog(@"updateMenu end");
-	if (runningDebug == 1) NSLog(@"feeds count: %d", [feeds count]);
-	if (runningDebug == 1) NSLog(@"ids count: %d", [ids count]);
-	if (runningDebug == 1) NSLog(@"links count: %d", [links count]);
-	if (runningDebug == 1) NSLog(@"titles count: %d", [titles count]);
-	if (runningDebug == 1) NSLog(@"sources count: %d", [sources count]);
-	if (runningDebug == 1) NSLog(@"summaries count: %d", [summaries count]);
-	if (runningDebug == 1) NSLog(@"torrentcastlinks count: %d", [torrentcastlinks count]);
+	DLog(@"updateMenu end");
+	DLog(@"feeds count: %d", [feeds count]);
+	DLog(@"ids count: %d", [ids count]);
+	DLog(@"links count: %d", [links count]);
+	DLog(@"titles count: %d", [titles count]);
+	DLog(@"sources count: %d", [sources count]);
+	DLog(@"summaries count: %d", [summaries count]);
+	DLog(@"torrentcastlinks count: %d", [torrentcastlinks count]);
 
 	// threading
 	[pool release];	
@@ -826,7 +834,7 @@
 			storedUserNo = [NSString stringWithString:storedUserNo];
 		} else {
 			storedUserNo = @"";
-			if (runningDebug == 1) NSLog(@"Something wrong with the userNo retrieval");
+			DLog(@"Something wrong with the userNo retrieval");
 			[self displayMessage:@"no user on server"];
 			[self displayAlert:NSLocalizedString(@"No user",nil):NSLocalizedString(@"We cannot find your user, which is pretty strange. Report this if you are sure to be connected to the internet.",nil)];
 		}
@@ -971,7 +979,7 @@
 	// threading
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	
-	if (runningDebug == 1) NSLog(@"markOneAsReadDetatched begin");
+	DLog(@"markOneAsReadDetatched begin");
 	
 	int index = [aNumber intValue];
 	
@@ -985,12 +993,12 @@
 		// at the end of this we will also remove the tempMenuSec and insert GRMenu
 		[self removeOneItemFromMenu:index];
 	} else {
-		if (runningDebug == 1) NSLog(@"markOneAsReadDetatched - there was not enough items in feeds or ids array");
+		DLog(@"markOneAsReadDetatched - there was not enough items in feeds or ids array");
 	}
 	
 	currentlyFetchingAndUpdating = NO;
 	
-	if (runningDebug == 1) NSLog(@"markOneAsReadDetatched end");
+	DLog(@"markOneAsReadDetatched end");
 	// threading
 	[pool release];
 }
@@ -1045,22 +1053,22 @@
 		if (totalUnreadItemsInGRInterface != -1) {
 			[self displayAlert:NSLocalizedString(@"Warning",nil) :NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.",nil)];
 			[self retrieveGoogleFeed];
-			if (runningDebug == 1) NSLog(@"Error marking all as read");
+			DLog(@"Error marking all as read");
 		}
 	}
 	[pool release];
 }
 
 - (IBAction)markAllAsRead:(id)sender {
-	if (runningDebug == 1) NSLog(@"markAllAsRead begin");
+	DLog(@"markAllAsRead begin");
 	currentlyFetchingAndUpdating = YES;
 	[statusItem setMenu:tempMenuSec];
 	[NSThread detachNewThreadSelector:@selector(markAllAsReadDetached) toTarget:self withObject:nil];
-	if (runningDebug == 1) NSLog(@"markAllAsRead end");
+	DLog(@"markAllAsRead end");
 }
 
 - (IBAction)launchLink:(id)sender {
-	if (runningDebug == 1) NSLog(@"launchLink begin");
+	DLog(@"launchLink begin");
 	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored (we make use of the id - and hopefully it will be an absolute). 
 	if ([ids containsObject:[sender title]]) {
 		currentlyFetchingAndUpdating = YES;
@@ -1070,8 +1078,8 @@
 		}
 		int index = [ids indexOfObjectIdenticalTo:[sender title]];
 		
-		if (runningDebug == 1) NSLog(@"Index is %d", index);
-		if (runningDebug == 1) NSLog(@"NUMBER OF ITEMS IS, %d", [GRMenu numberOfItems]);
+		DLog(@"Index is %d", index);
+		DLog(@"NUMBER OF ITEMS IS, %d", [GRMenu numberOfItems]);
 		
 		if ([GRMenu numberOfItems] == 9) {
 			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
@@ -1083,9 +1091,9 @@
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:index]]];
 		[NSThread detachNewThreadSelector:@selector(markOneAsReadDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];
 	} else {
-		if (runningDebug == 1) NSLog(@"Item has already gone away, so we cannot refetch it");
+		DLog(@"Item has already gone away, so we cannot refetch it");
 	}
-	if (runningDebug == 1) NSLog(@"launchLink end");	
+	DLog(@"launchLink end");	
 }
 
 - (IBAction)doOptionalActionFromMenu:(id)sender {
@@ -1101,25 +1109,25 @@
 		}
 	} else {
 		currentlyFetchingAndUpdating = NO;
-		if (runningDebug == 1) NSLog(@"Item has already gone away, so we cannot refetch it");
+		DLog(@"Item has already gone away, so we cannot refetch it");
 	}
 }
 
 - (void)removeOneItemFromMenu:(int)index {
 	
-	if (runningDebug == 1) NSLog(@"removeOneItemFromMenu begin");
-	if (runningDebug == 1) NSLog(@"feeds count: %d", [feeds count]);
-	if (runningDebug == 1) NSLog(@"ids count: %d", [ids count]);
-	if (runningDebug == 1) NSLog(@"links count: %d", [links count]);
-	if (runningDebug == 1) NSLog(@"titles count: %d", [titles count]);
-	if (runningDebug == 1) NSLog(@"sources count: %d", [sources count]);
-	if (runningDebug == 1) NSLog(@"summaries count: %d", [summaries count]);
-	if (runningDebug == 1) NSLog(@"torrentcastlinks count: %d", [torrentcastlinks count]);
+	DLog(@"removeOneItemFromMenu begin");
+	DLog(@"feeds count: %d", [feeds count]);
+	DLog(@"ids count: %d", [ids count]);
+	DLog(@"links count: %d", [links count]);
+	DLog(@"titles count: %d", [titles count]);
+	DLog(@"sources count: %d", [sources count]);
+	DLog(@"summaries count: %d", [summaries count]);
+	DLog(@"torrentcastlinks count: %d", [torrentcastlinks count]);
 	
 	[lastIds setArray:ids];
 	[results removeAllObjects];
 	
-	if (runningDebug == 1) NSLog(@"ids count %d >= index %d", [ids count], index);
+	DLog(@"ids count %d >= index %d", [ids count], index);
 	
 	if ([ids count] >= index+1 && 
 		[feeds count] >= index+1 && 
@@ -1129,34 +1137,34 @@
 		[summaries count] >= index+1 &&
 		[torrentcastlinks count] >= index+1) {
 		
-		if (runningDebug == 1) NSLog(@"feeds count: %d", [feeds count]);
+		DLog(@"feeds count: %d", [feeds count]);
 		[feeds removeObjectAtIndex:index];
 		
-		if (runningDebug == 1) NSLog(@"ids count: %d", [ids count]);
+		DLog(@"ids count: %d", [ids count]);
 		[ids removeObjectAtIndex:index];
 		
-		if (runningDebug == 1) NSLog(@"links count: %d", [links count]);
+		DLog(@"links count: %d", [links count]);
 		[links removeObjectAtIndex:index];
 		
-		if (runningDebug == 1) NSLog(@"titles count: %d", [titles count]);
+		DLog(@"titles count: %d", [titles count]);
 		[titles removeObjectAtIndex:index];
 		
-		if (runningDebug == 1) NSLog(@"sources count: %d", [sources count]);
+		DLog(@"sources count: %d", [sources count]);
 		[sources removeObjectAtIndex:index];
 		
-		if (runningDebug == 1) NSLog(@"summaries count: %d", [summaries count]);
+		DLog(@"summaries count: %d", [summaries count]);
 		[summaries removeObjectAtIndex:index];
 		
-		if (runningDebug == 1) NSLog(@"torrentcastlinks count: %d", [torrentcastlinks count]);
+		DLog(@"torrentcastlinks count: %d", [torrentcastlinks count]);
 		[torrentcastlinks removeObjectAtIndex:index];
 		
-		if (runningDebug == 1) NSLog(@"running updateMenu from removeOneItemFromMenu");
+		DLog(@"running updateMenu from removeOneItemFromMenu");
 		[self updateMenu];
 		
 	} else {
-		if (runningDebug == 1) NSLog(@"Err. this and that did not match, we don't remove anything");
+		DLog(@"Err. this and that did not match, we don't remove anything");
 	}
-	if (runningDebug == 1) NSLog(@"removeOneItemFromMenu end");	
+	DLog(@"removeOneItemFromMenu end");	
 }
 
 - (void)markOneAsStarred:(int)index {
@@ -1190,7 +1198,7 @@
 	if (markOneAsRead) {
 		
 	} else {
-		// if (runningDebug == 1) NSLog(@"Oops");
+		// DLog(@"Oops");
 	}
 }
 
@@ -1217,7 +1225,7 @@
 	if (markread) {
 		
 	} else {
-		// if (runningDebug == 1) NSLog(@"Oops");
+		// DLog(@"Oops");
 	}
 
 	// threading
@@ -1243,15 +1251,13 @@
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
 	// TODO: what do do here?
-    //if (runningDebug == 1) NSLog([response description]);
+    //DLog([response description]);
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
-    if (runningDebug == 1) {
-		NSLog(@"Connection failed! Error - %@ %@",
-				[error localizedDescription],
-				[[error userInfo] objectForKey:NSURLErrorFailingURLStringErrorKey]);
-	}
+	DLog(@"Connection failed! Error - %@ %@",
+			[error localizedDescription],
+			[[error userInfo] objectForKey:NSURLErrorFailingURLStringErrorKey]);
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
@@ -1310,7 +1316,7 @@
 			[NSThread sleepUntilDate:sleepUntil];
 			[self checkNow:nil];	
 		} else {
-			if (runningDebug == 1) NSLog(@"Oops, the subscription did not make it through");
+			DLog(@"Oops, the subscription did not make it through");
 		}
 	}
 }
@@ -1445,16 +1451,16 @@
 	
 	// This doesn't seem to work correctly
 	while (currentlyFetchingAndUpdating == YES) {
-		if (runningDebug == 1) NSLog(@"Growl click: We are currently updating and fetching... waiting");
+		DLog(@"Growl click: We are currently updating and fetching... waiting");
 	}
 	
-	if (runningDebug == 1) NSLog(@"Growl click: Running...not waiting");
+	DLog(@"Growl click: Running...not waiting");
 	currentlyFetchingAndUpdating == YES;
 		
 	if ([ids containsObject:clickContext]) {
 		[self launchLink:[GRMenu itemWithTitle:clickContext]];
 	} else {
-		if (runningDebug == 1) NSLog(@"User clicked on growl, item already went away");
+		DLog(@"User clicked on growl, item already went away");
 	}			
 }
 
@@ -1546,7 +1552,7 @@
 			torrentCastFolderPathString = path;
 		}
 		
-		if (runningDebug == 1) NSLog(@"TorrentCast folder selected: %@", torrentCastFolderPathString);		
+		DLog(@"TorrentCast folder selected: %@", torrentCastFolderPathString);		
 		[prefs setValue:[NSString stringWithString:torrentCastFolderPathString] forKey:@"torrentCastFolderPath"];
 		[torrentCastFolderPath setStringValue:[prefs valueForKey:@"torrentCastFolderPath"]];
 	}
