@@ -10,8 +10,11 @@
 #import <Cocoa/Cocoa.h>
 #import <Growl/Growl.h>
 #import <IOKit/IOKitLib.h>
+#import "IPMNetworkManagerDelegate.h"
 
-@interface MainController : NSObject <GrowlApplicationBridgeDelegate> {
+@class IPMNetworkManager;
+
+@interface MainController : NSObject<GrowlApplicationBridgeDelegate, IPMNetworkManagerDelegate> {
     IBOutlet NSSecureTextField * passwordField;
     IBOutlet NSTextField * usernameField;
     IBOutlet NSTextField * addNewFeedUrlField;
@@ -45,12 +48,15 @@
 	
 	NSString * storedSID;
 	NSString * torrentCastFolderPathString;
+	NSString * currentToken;
 	
 	NSSound * theSound;
 	NSImage * unreadItemsImage;
 	NSImage * highlightedImage;
 	NSImage * nounreadItemsImage;
 	NSImage * errorImage;
+	
+	IPMNetworkManager * networkManager;
 	
 	BOOL isLeopard;
 	BOOL currentlyFetchingAndUpdating;
@@ -60,9 +66,8 @@
 	int lastCheckMinute;
 }
 
-- (void)downloadFile:(NSString *)url:(NSString *)filename;
+- (void)downloadFile:(NSString *)filename atUrl:(NSString *)url;
 - (void)removeNumberOfItemsFromMenubar:(int) number;
-- (NSString *)sendConnectionRequest:(NSString *)urlToConnectTo:(BOOL)handleCookies:(NSString *)cookieValue:(NSString *)theHTTPMethod:(NSString *)theHTTPBody;
 - (NSAttributedString *)makeAttributedStatusItemString:(NSString *)text;
 - (NSAttributedString *)makeAttributedMenuString:(NSString *)bigtext:(NSString *)smalltext;
 - (NSString *)flattenHTML:(NSString *)stringToFlatten;
@@ -73,10 +78,8 @@
 - (NSString *)grabUserNo;
 - (NSString *)loginToGoogle;
 - (void)removeAllItemsFromMenubar;
-- (NSString *)getTokenFromGoogle;
+- (void)getTokenFromGoogle;
 - (void)removeOneItemFromMenu:(int)index;
-- (void)markOneAsStarred:(int)index;
-- (void)markOneAsRead:(int)index;
 - (void)timer:(NSTimer *)timer;
 - (int)getUnreadCount;
 - (void)retrieveGoogleFeed;
@@ -100,6 +103,11 @@
 - (void)selectTorrentCastFolderEnded:(NSOpenPanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 - (void)checkNowWithDelayDetached:(NSNumber *)delay;
 - (NSString *)getGoogleSIDClean;
+- (void)markResultsAsReadDetached;
+- (void)markOneAsReadDetached:(NSNumber *)aNumber;
+- (void)markAllAsReadDetached;
+- (void)markOneAsStarredDetached:(NSNumber *)aNumber;
+- (void)awakenFromSleep;
 
 
 - (IBAction)launchSite:(id)sender;

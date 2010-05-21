@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		495B263B11A427E500EE4BEB /* IPMPendingConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 495B263A11A427E500EE4BEB /* IPMPendingConnection.m */; };
 		495B263F11A4285A00EE4BEB /* IPMNetworkManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 495B263E11A4285A00EE4BEB /* IPMNetworkManager.m */; };
+		495B278011A566A300EE4BEB /* NetParam.m in Sources */ = {isa = PBXBuildFile; fileRef = 495B277F11A566A300EE4BEB /* NetParam.m */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
@@ -70,6 +71,8 @@
 		495B263D11A4285A00EE4BEB /* IPMNetworkManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManager.h; sourceTree = "<group>"; };
 		495B263E11A4285A00EE4BEB /* IPMNetworkManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMNetworkManager.m; sourceTree = "<group>"; };
 		495B266511A42B4200EE4BEB /* IPMConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMConfiguration.h; sourceTree = "<group>"; };
+		495B277E11A566A300EE4BEB /* NetParam.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetParam.h; sourceTree = "<group>"; };
+		495B277F11A566A300EE4BEB /* NetParam.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NetParam.m; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* Reader Notifier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Reader Notifier.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A8BB46F0DCA43F8003AD06B /* Russian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Russian; path = Russian.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -120,6 +123,8 @@
 				495B263C11A427FB00EE4BEB /* IPMNetworkManagerDelegate.h */,
 				495B263911A427E500EE4BEB /* IPMPendingConnection.h */,
 				495B263A11A427E500EE4BEB /* IPMPendingConnection.m */,
+				495B277E11A566A300EE4BEB /* NetParam.h */,
+				495B277F11A566A300EE4BEB /* NetParam.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -291,6 +296,7 @@
 				C7F2B64B0B0A5E8300790961 /* Keychain.m in Sources */,
 				495B263B11A427E500EE4BEB /* IPMPendingConnection.m in Sources */,
 				495B263F11A4285A00EE4BEB /* IPMNetworkManager.m in Sources */,
+				495B278011A566A300EE4BEB /* NetParam.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

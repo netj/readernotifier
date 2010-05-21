@@ -6,15 +6,8 @@
 
 #import "MainController.h"
 #import "Keychain.h"
-
-// Logging
-#ifdef DEBUG
-#   define DLog(fmt, ...) NSLog((@"%s [Line %d] " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__);
-#else
-#   define DLog(...)
-#endif
-// ALog always displays output regardless of the DEBUG setting
-#define ALog(fmt, ...) NSLog((@"%s [Line %d] " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__);
+#import "IPMNetworkManager.h"
+#import "NetParam.h"
 
 // 27 with special icons, 29 else
 #define ourStatusItemWithLength 29
@@ -30,6 +23,17 @@
 @implementation Delegate
 - (void) sound:(NSSound *)sound didFinishPlaying:(BOOL)aBool {}
 @end
+
+@interface MainController (PrivateMethods)
+- (void)processLoginToGoogle:(NSString *)result;
+- (void)processGoogleFeed:(NSData *)result;
+- (void)processFailGoogleFeed:(NSError *)error;
+- (void)processUnreadCount:(NSData *)result;
+- (void)processFailUnreadCount:(NSError *)error;
+- (void)processDownloadFile:(NSString *)filename withData:(NSData *)result;
+- (void)processTokenFromGoogle:(NSString *)result;
+@end
+
 
 @implementation MainController
 
@@ -50,6 +54,9 @@
 	prefs = [[NSUserDefaults standardUserDefaults] retain];
 	[prefs registerDefaults:defaultPrefs];	
 	
+	networkManager = [[IPMNetworkManager alloc] init];
+	currentToken = nil;
+	
 	// in earlier versions this was set to the actual user password, which we would want to override
 	[prefs setObject:@"NotForYourEyes" forKey:@"Password"];
 	
@@ -58,12 +65,12 @@
 
 	NSNotificationCenter * nc = [NSNotificationCenter defaultCenter];
 	[nc addObserver:self 
-		   selector:@selector(notificationTest1)
+		   selector:@selector(updateMenu)
 			   name:@"PleaseUpdateMenu"
 			 object:GRMenu];
 
 	// we need this to know when the computer wakes from sleep
-	[[[NSWorkspace sharedWorkspace] notificationCenter] addObserver:self selector:@selector(notificationTest2) name:NSWorkspaceDidWakeNotification object:nil];
+	[[[NSWorkspace sharedWorkspace] notificationCenter] addObserver:self selector:@selector(awakenFromSleep) name:NSWorkspaceDidWakeNotification object:nil];
 
 	return self;
 }
@@ -75,6 +82,8 @@
 	[lastCheckTimer invalidate];
 	[lastCheckTimer release];
 	[prefs release];
+	[networkManager release];
+	[currentToken release];
     [super dealloc];
 }
 
@@ -153,18 +162,8 @@
 	[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:3];
 	[[GRMenu insertItemWithTitle:NSLocalizedString(@"Preferences...",nil) action:@selector(openPrefs:) keyEquivalent:@"" atIndex:4] setTarget:self];
 	
-	storedSID = [[NSString alloc] init];
 	storedSID = @"";
-	
-	if ([prefs valueForKey:@"Username"] && [Keychain checkForExistanceOfKeychain] > 0) {
-		[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
-		[mainTimer fire];
-		[self createLastCheckTimer];
-		[lastCheckTimer fire];
-	} else {
-		[self displayAlert:@"Please fill in your Google Account login in the preference pane":@"In order to connect to your feed you need to type in your username and password."];
-		[self displayMessage:@"please enter login details"];
-	}
+	[self loginToGoogle];
 	
 	// Get the info dictionary (Info.plist)
     NSDictionary * infoDictionary;
@@ -200,7 +199,7 @@
 				// threading
 				[mainTimer invalidate];	
 				[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
-				[NSThread detachNewThreadSelector:@selector(retrieveGoogleFeed) toTarget:self withObject:nil];
+				[self retrieveGoogleFeed];
 			}
 		}
 	}
@@ -218,14 +217,15 @@
 	for (j = 0; j < [results count]; j++) {
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:[[results objectAtIndex:j] intValue]]]];	
 	}
-	[NSThread detachNewThreadSelector:@selector(markResultsAsReadDetached) toTarget:self withObject:nil];
+	[self markResultsAsReadDetached];
 }
 
 - (IBAction)markAllAsRead:(id)sender {
 	DLog(@"markAllAsRead begin");
+	[self getUnreadCount];
 	currentlyFetchingAndUpdating = YES;
 	[statusItem setMenu:tempMenuSec];
-	[NSThread detachNewThreadSelector:@selector(markAllAsReadDetached) toTarget:self withObject:nil];
+	[self markAllAsReadDetached];
 	DLog(@"markAllAsRead end");
 }
 
@@ -251,7 +251,7 @@
 			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
 		}
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:index]]];
-		[NSThread detachNewThreadSelector:@selector(markOneAsReadDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];
+		[self markOneAsReadDetached:[NSNumber numberWithInt:index]];
 	} else {
 		DLog(@"Item has already gone away, so we cannot refetch it");
 	}
@@ -264,11 +264,10 @@
 	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored (we make use of the id - and hopefully it will be an absolute). 
 	if ([ids containsObject:[sender title]]) {
 		int index = [ids indexOfObjectIdenticalTo:[sender title]];
-		if ([[prefs valueForKey:@"onOptionalActAlsoStarItem"] boolValue] == YES) {
-			[NSThread detachNewThreadSelector:@selector(markOneAsStarredDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];
-		} else {
-			[NSThread detachNewThreadSelector:@selector(markOneAsReadDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];		
-		}
+		if ([[prefs valueForKey:@"onOptionalActAlsoStarItem"] boolValue] == YES)
+			[self markOneAsStarredDetached:[NSNumber numberWithInt:index]];
+		else
+			[self markOneAsReadDetached:[NSNumber numberWithInt:index]];
 	} else {
 		currentlyFetchingAndUpdating = NO;
 		DLog(@"Item has already gone away, so we cannot refetch it");
@@ -366,115 +365,25 @@
 #pragma mark -
 #pragma mark Netowrk methods
 
-- (NSString *)sendConnectionRequest:(NSString *)urlToConnectTo:(BOOL)handleCookies:(NSString *)cookieValue:(NSString *)theHTTPMethod:(NSString *)theHTTPBody {
-	NSError * error = nil;
-	NSURLResponse * response;
-	NSData * dataReply;
-	NSString * stringReply;
-	NSMutableURLRequest * request = [NSMutableURLRequest  requestWithURL: [NSURL URLWithString:urlToConnectTo]];
-	[request setTimeoutInterval:5.0];
-	
-	if (isLeopard) {
-		[request setHTTPShouldHandleCookies:NO];
-	} else {
-		[request setHTTPShouldHandleCookies:handleCookies];
-	}
-
-	[request setValue:cookieValue forHTTPHeaderField:@"Cookie"];
-	[request setHTTPMethod:theHTTPMethod]; // Changing the setHTTPMethod to "POST" sends the HTTPBody
-	[request setHTTPBody: [theHTTPBody dataUsingEncoding: NSUTF8StringEncoding]];
-	
-	dataReply = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-	
-	if (error == nil) {
-		stringReply = [[[NSString alloc] initWithData:dataReply encoding:NSUTF8StringEncoding] autorelease];
-		return stringReply;
-	} else {
-		return @"";
-	}
-}
-
 - (int)getUnreadCount {
 	DLog(@"Total count (getUnreadCount) method initiated");
 	// since .99 this has provided a memory error (case of Moore).
 	// we've tried to fix it with releasing atomdoc2 and temparray5 (and not releasing dstring)
 	// http://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=json&ck=1165697710220&client=scroll
 
-	NSError * newError = nil;
-	NSURLResponse * newResponse;
-	NSData * newDataReply;
-	
-	NSMutableURLRequest * newRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=xml&client=scroll",[self getURLPrefix]]]];
-
-	// we need to do this, otherwise we can risk get an old one :(  - seriously, we did!
-	[newRequest setCachePolicy:NSURLRequestReloadIgnoringCacheData];
-	[newRequest setTimeoutInterval:5.0];
-	if (isLeopard) {
-		[newRequest setHTTPShouldHandleCookies:NO];
-	} else {
-		[newRequest setHTTPShouldHandleCookies:YES];
-	}
-	[newRequest setValue:[self loginToGoogle] forHTTPHeaderField:@"Cookie"];
-	[newRequest setHTTPMethod:@"GET"]; // Changing the setHTTPMethod to "POST" sends the HTTPBody
-
-	newDataReply = [NSURLConnection sendSynchronousRequest:newRequest returningResponse:&newResponse error:&newError];
-	
-	if (newError==nil) {
-		NSXMLDocument * atomdoc2 = [[NSXMLDocument alloc] initWithData:newDataReply options:0 error:&xmlError];	
-		DLog(@"getUnreadCount1");
-		NSMutableArray * tempArray5 = [[NSMutableArray alloc] init];
-		
-		DLog(@"getUnreadCount2");
-
-		// if the user is on labels, use that to check instead!
-		if ([[prefs valueForKey:@"Label"] isEqualToString:@""]) {
-			[tempArray5 addObjectsFromArray:[atomdoc2 objectsForXQuery:@"for $x in /object/list/object where $x/string[contains(., 'reading-list')] return $x/number[@name=\"count\"]/text()" error:NULL]];  // peters add
-		} else {
-			DLog(@"getUnreadCount haslabel");
-			[tempArray5 addObjectsFromArray:[atomdoc2 objectsForXQuery:[NSString stringWithFormat:@"for $x in /object/list/object where $x/string[contains(., '/label/%@')] return $x/number[@name=\"count\"]/text()", [prefs valueForKey:@"Label"]] error:NULL]]; // peters add
-		}
-		
-
-		int k = 0, t = 0;
-		NSString * dString;
-		for (k = 0; k < [tempArray5 count]; k++) {
-			dString = [[tempArray5 objectAtIndex:k] stringValue];
-			t = t + [dString intValue];
-		}
-		
-		DLog(@"getUnreadCount3");
-
-		[tempArray5 release];
-		[atomdoc2 release];
-		
-		DLog(@"The total count of unread items is now %d", t);
-
-		totalUnreadItemsInGRInterface = t;
-	} else {
-	    // there was an error
-		totalUnreadItemsInGRInterface = -1;
-		[self errorImageOn]; 
-		currentlyFetchingAndUpdating = NO;
-		[lastCheckTimer invalidate];
-		[self createLastCheckTimer];
-		[lastCheckTimer fire];
-		[statusItem setMenu:GRMenu];
-	}
-	
+	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=xml&client=scroll", [self getURLPrefix]];
+	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processUnreadCount:) andFail:@selector(processFailUnreadCount:)];
+	[networkManager retrieveDataAtUrl:url withDelegate:self andParam:np];
+	[np release];
 	return totalUnreadItemsInGRInterface;
 }
 
 - (void)retrieveGoogleFeed {
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	
 	DLog(@"retrieveGoogleFeed begin");
-
 	currentlyFetchingAndUpdating = YES;
 	[statusItem setMenu:tempMenuSec];
-		
 	// in case we had an error before, clear the highlightedimage and displaymessage
 	[statusItem setAlternateImage:highlightedImage];
-
 	xmlError = [[[NSError alloc] init] autorelease];
 	[lastIds setArray:ids];
 	[results removeAllObjects];
@@ -487,170 +396,151 @@
 	[summaries removeAllObjects];
 	[torrentcastlinks removeAllObjects];
 	[user removeAllObjects]; // if this is not done, we cannot be sure that a user will get a new userNo on re-entering login details
-	
 	/* new */
-	
-	NSError * newError = nil;
-	NSURLResponse * newResponse;
-	NSData * newDataReply;
-	
-	NSMutableURLRequest * newRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/atom/user/-/%@?r=d&xt=user/-/state/com.google/read&n=%d",[self getURLPrefix],[self getLabel],[[prefs valueForKey:@"maxItems"] intValue]+1]]];
-	[newRequest setTimeoutInterval:5.0];
-	[newRequest setCachePolicy:NSURLRequestReloadIgnoringCacheData];
-	if (isLeopard) {
-		[newRequest setHTTPShouldHandleCookies:NO];
-	} else {
-		[newRequest setHTTPShouldHandleCookies:YES];
-	}
-	
-
-	[newRequest setHTTPMethod:@"GET"]; // Changing the setHTTPMethod to "POST" sends the HTTPBody
-	[newRequest setValue:[self loginToGoogle] forHTTPHeaderField:@"Cookie"];		
-
-	newDataReply = [NSURLConnection sendSynchronousRequest:newRequest returningResponse:&newResponse error:&newError];
-
-	if (newError != nil) {
-		[self errorImageOn]; 
-		currentlyFetchingAndUpdating = NO;
-	
-		[lastCheckTimer invalidate];
-		[self createLastCheckTimer];
-		[lastCheckTimer fire];
-		
-		[statusItem setMenu:GRMenu];
-		[pool release];
-		return;
-	}
-			
-	NSXMLDocument * atomdoc = [[NSXMLDocument alloc] initWithData:newDataReply options:0 error:&xmlError];	
-
-	[titles addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/title/text()" error:NULL]];
-	[sources addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/title/text()" error:NULL]];
-	[ids addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/id/text()" error:NULL]];
-	[feeds addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/@gr:stream-id" error:NULL]];
-	[user addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/id/text()" error:NULL]];
-	
-	DLog(@"retrieveGoogleFeed 1");
-	
-	int k = 0;
-	for(k = 0; k < [titles count]; k++) {
-		NSMutableArray * tempArray0 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@rel='alternate']/@href",k+1] error:NULL]];
-		if([tempArray0 count] > 0){
-			[links insertObject:[[tempArray0 objectAtIndex:0] stringValue] atIndex:k];
-		} else {
-			[links insertObject:@"" atIndex:k];
-		}
-		[tempArray0 release];
-	}
-
-	DLog(@"retrieveGoogleFeed 2");
-	
-	int m = 0;
-	for (m = 0; m < [titles count]; m++) {
-		NSMutableArray * tempArray2 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/summary/text()",m+1] error:NULL]];
-		if ( [tempArray2 count]>0 ) {
-			[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [self flattenHTML:[self trimDownString:[[tempArray2 objectAtIndex:0] stringValue]:maxLettersInSummary]]] atIndex:m];
-		} else {
-			NSMutableArray * tempArray3 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/content/text()",m+1] error:NULL]];
-			if( [tempArray3 count]>0 ) {
-				[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [self flattenHTML:[self trimDownString:[[tempArray3 objectAtIndex:0] stringValue]:maxLettersInSummary]]] atIndex:m];
-			} else {
-				[summaries insertObject:@"" atIndex:m];
-			}
-			[tempArray3 release];
-		}
-		[tempArray2 release];
-	}
-	
-	DLog(@"retrieveGoogleFeed 2a");
-
-	// torrentcasting
-	int l;
-	for (l=0; l<[titles count]; l++) {
-		NSMutableArray * tempArray2 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@type='application/x-bittorrent']/@href",l+1] error:NULL]];
-		if ( [tempArray2 count]>0 ) {
-			[torrentcastlinks insertObject:[[tempArray2 objectAtIndex:0] stringValue] atIndex:l];
-		} else {
-			[torrentcastlinks insertObject:@"" atIndex:l];
-		}
-		[tempArray2 release];
-	}
-
-	DLog(@"retrieveGoogleFeed 3");
-	int j = 0;
-	for(j = 0; j < [feeds count]; j++) {
-		[feeds replaceObjectAtIndex:j withObject:[[feeds objectAtIndex:j] stringValue]];
-	}
-	
-	DLog(@"retrieveGoogleFeed 4");
-	int d;
-	for(d=0; d<[ids count]; d++){
-		[ids replaceObjectAtIndex:d withObject:[[ids objectAtIndex:d] stringValue]];
-	}
-
-		
-	DLog(@"retrieveGoogleFeed 5");
-	[atomdoc release];
-
-	DLog(@"retrieveGoogleFeed 6");
-
-	if (xmlError != nil) {
-		// TODO: something here?
-	} else {
-		// We need to set the global whether there are (at least one) more unread items online in the google reader interface
-		if ([titles count] > [[prefs valueForKey:@"maxItems"] intValue]) {
-			moreUnreadExistInGRInterface = YES;
-			// We also remove the last item, since we do not wish to display it anywhere, or fuck up the count
-			//  note, we remove the first item, which is actually the oldest (we reversed the array earlier)
-			//  ! we could actually skip all the maxItems checks later, but they're nice to have.
-			/// UPDATE! We do not reverse it any longer! So now we just remove the last item
-
-			DLog(@"retrieveGoogleFeed 6");
-
-			if ([ids count] > 0) {
-				[titles removeLastObject];
-				[sources removeLastObject];
-				[ids removeLastObject];
-				[feeds removeLastObject];
-				[links removeLastObject];
-				[summaries removeLastObject];
-				[torrentcastlinks removeLastObject];
-			}
-			
-			DLog(@"retrieveGoogleFeed 7");
-			
-			// while we know that there are extra unread items, we want to get the exact count of them, 
-			// the totalUnreadItemsInGRInterface will be updated automatically
-			
-			//// HERE THERE IS AN ERROR!!! **** this call makes a memory-error
-			[self getUnreadCount];			
-		} else {
-			moreUnreadExistInGRInterface = NO;
-		}
-				
-		// threading
-		[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
-	}
-	
-	DLog(@"retrieveGoogleFeed end");
-	// threading
-	[pool release];
+	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/atom/user/-/%@?r=d&xt=user/-/state/com.google/read&n=%d&output=json",
+					  [self getURLPrefix], [self getLabel], [[prefs valueForKey:@"maxItems"] intValue] + 1];
+	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processGoogleFeed:) andFail:@selector(processFailGoogleFeed:)];
+	[networkManager retrieveDataAtUrl:url withDelegate:self andParam:np];
+	[np release];
 }
 
+- (void)downloadFile:(NSString *)filename atUrl:(NSString *)url {
+	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processDownloadFile:withData:) fail:0 andSecondParam:filename];
+	[networkManager retrieveDataAtUrl:url withDelegate:self andParam:np];
+	[np release];
+}
+
+- (NSString *)loginToGoogle {
+	NSString * result = [prefs valueForKey:@"storedSID"];
+	if ([result isEqualToString:@""]) {
+		NSString * p1 = [self usernameForAuthenticationChallengeWithParam:nil];
+		NSString * p2 = [self passwordForAuthenticationChallengeWithParam:nil];
+		NSString * params = [NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d", p1, p2, versionBuildNumber];
+		NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processLoginToGoogle:) andFail:0];
+		[networkManager sendPOSTNetworkRequest:@"https://www.google.com/accounts/ClientLogin" 
+									  withBody:params 
+							  withResponseType:NSSTRING_NRT 
+									  delegate:self 
+									  andParam:np];
+		[np release];
+	}
+	return result;
+}
+
+- (void)getTokenFromGoogle {
+	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/token", [self getURLPrefix]];
+	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processTokenFromGoogle:) andFail:0];
+	[networkManager retrieveStringAtUrl:url withDelegate:self andParam:np];
+}
+
+- (void)markOneAsStarredDetached:(NSNumber *)aNumber {
+	int index = [aNumber intValue];
+	
+	NSString * feedstring;
+	feedstring = [self searchAndReplace:@":":@"%3A":[feeds objectAtIndex:index]];
+	feedstring = [self searchAndReplace:@"/":@"%2F":feedstring];
+	feedstring = [self searchAndReplace:@"=":@"-":feedstring];
+	
+	NSString * idsstring;
+	idsstring = [self searchAndReplace:@"/":@"%2F":[ids objectAtIndex:index]];
+	idsstring = [self searchAndReplace:@",":@"%2C":idsstring];
+	idsstring = [self searchAndReplace:@":":@"%3A":idsstring];
+	
+	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=scroll", [self getURLPrefix]];
+	NSString * body = [NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F%@%%2Fstate%%2Fcom.google%%2Fstarred&T=%@", 
+					   feedstring, idsstring, [self grabUserNo], currentToken];
+	[networkManager sendPOSTNetworkRequest:url withBody:body withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
+	[self markOneAsReadDetached:[NSNumber numberWithInt:index]];
+}
+
+- (void)markOneAsReadDetached:(NSNumber *)aNumber {
+	DLog(@"markOneAsReadDetatched begin");
+	
+	int index = [aNumber intValue];
+	
+	if ([feeds count] >= index+1 && [feeds count] >= index+1) {
+		// we replace all instances of = to %3D for google
+		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:index]];
+		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
+		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@", 
+						  [self getURLPrefix], feedstring, [ids objectAtIndex:index], currentToken];
+		[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
+		[feedstring release];
+		// at the end of this we will also remove the tempMenuSec and insert GRMenu
+		[self removeOneItemFromMenu:index];
+	} else
+		DLog(@"markOneAsReadDetatched - there was not enough items in feeds or ids array");
+	currentlyFetchingAndUpdating = NO;
+	DLog(@"markOneAsReadDetatched end");
+}
+
+- (void)markResultsAsReadDetached {
+	int j = 0;
+	for (j = 0; j < [results count]; j++) {
+		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:j]];
+		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
+		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",
+						  [self getURLPrefix],feedstring,[ids objectAtIndex:j],currentToken];
+		[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
+		[feedstring release];
+	}
+	
+	currentlyFetchingAndUpdating = NO;
+	// the statusItem is actually still tempMenuSec, but it doesn't matter because It'll go back to GRMenu after the end of CheckNow
+	[self checkNow:nil];
+}
+
+- (void)markAllAsReadDetached {
+	[statusItem setMenu:tempMenuSec];
+	
+	if (totalUnreadItemsInGRInterface == [results count] || [[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue] == YES) {
+		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/mark-all-as-read?client=scroll", [self getURLPrefix]];
+		NSString * body = [NSString stringWithFormat:@"s=user%%2F%@%%2F%@&T=%@", 
+						   [self grabUserNo], [self searchAndReplace:@"/" :@"%2F" :[self getLabel]], currentToken];
+		[networkManager sendPOSTNetworkRequest:url withBody:body withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
+		[lastIds setArray:ids];
+		[results removeAllObjects];
+		[feeds removeAllObjects];
+		[ids removeAllObjects];
+		[links removeAllObjects];
+		[titles removeAllObjects];
+		[sources removeAllObjects];
+		[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
+	} else {
+		if (totalUnreadItemsInGRInterface != -1) {
+			[self displayAlert:NSLocalizedString(@"Warning",nil) :NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.",nil)];
+			[self retrieveGoogleFeed];
+			DLog(@"Error marking all as read");
+		}
+	}
+}
+
+- (void)addFeed:(NSString *)url {
+	if ([[prefs valueForKey:@"dontVerifySubscription"] boolValue] != YES) {
+		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[[NSString stringWithFormat:@"%@://www.google.com/reader/preview/*/feed/", [self getURLPrefix]] stringByAppendingString:[NSString stringWithFormat:@"%@", CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)url, NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8)]]]];
+	} else {
+		// Here we should implement a check if there actually is no feed there :(
+		NSURL * posturl = [NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/quickadd", [self getURLPrefix]]];
+		NSMutableURLRequest * postread = [NSMutableURLRequest requestWithURL:posturl];
+		[postread setTimeoutInterval:5.0];
+		NSString * sanitizedUrl = [url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]; 
+		NSString * sendString = [NSString stringWithFormat:@"quickadd=%@&T=%@", sanitizedUrl, currentToken];
+		[networkManager sendPOSTNetworkRequest:sendString withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
+		// we need to sleep a little
+		[NSThread sleepForTimeInterval:1.5];
+		[self checkNow:nil];
+	}
+}
 
 //updates the icon if necessary, updates the unread item
 - (void)updateMenu {
-
-	// threading
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	
 	[lastCheckTimer invalidate];
 	[self createLastCheckTimer];
 	[lastCheckTimer fire];
-
+	
 	
 	DLog(@"updateMenu begin");
-
+	
 	currentlyFetchingAndUpdating = YES;
 	
 	int n = [GRMenu numberOfItems];
@@ -662,22 +552,24 @@
 	// EXPERIMENTAL
 	/// This is a feature in development!
 	/// The automatical downloading of certain feeds
-
+	
 	// TORRENTCASTING
 	if ([prefs boolForKey:@"EnableTorrentCastMode"] == YES) {
 		int i = 0;		
 		for(i = 0; i < [titles count]; i++) {
-		
-			if (![[torrentcastlinks objectAtIndex:i] isEqualToString:@""]) {
 			
+			if (![[torrentcastlinks objectAtIndex:i] isEqualToString:@""]) {
+				
 				NSFileManager * fm = [NSFileManager defaultManager];	
 				if ([fm fileExistsAtPath:[prefs valueForKey:@"torrentCastFolderPath"]] == YES) { 
-				
-					[self downloadFile:[torrentcastlinks objectAtIndex:i]:[NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]];
-						
+					
+					[self downloadFile:[NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]] atUrl:[torrentcastlinks objectAtIndex:i]];
+					
 					NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:i]];
 					[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
-					[self sendConnectionRequest:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",[self getURLPrefix],feedstring,[ids objectAtIndex:i],[self getTokenFromGoogle]]:YES:[self loginToGoogle]:@"POST":@""];
+					NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",
+									  [self getURLPrefix], feedstring, [ids objectAtIndex:i], currentToken];
+					[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
 					[feedstring release];
 					
 					if ([[prefs valueForKey:@"openTorrentAfterDownloading"] boolValue] == YES) {
@@ -701,7 +593,7 @@
 			}
 		}
 	}
-
+	
 	int c = 0;
 	for(c = 0; c < [titles count]; c++) {
 		[results addObject:[NSString stringWithFormat:@"%d", c]];
@@ -711,29 +603,29 @@
 	if ([results count] > 0 && [[prefs valueForKey:@"minimalFunction"] boolValue] != YES) {
 		[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:3];
 	}
-
+	
 	if ([results count] > 0 && [[prefs valueForKey:@"minimalFunction"] boolValue] != YES && moreUnreadExistInGRInterface == YES) {
-
-			// we don't want to display the Mark all as read if there are more items in the Google Reader Interface
-			// though we check if the users wants to override this
-			
-			if ([[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue] != YES) {			
-				[GRMenu insertItemWithTitle:[NSString stringWithString:NSLocalizedString(@"More unread items exist",nil)] action:nil keyEquivalent:@"" atIndex:indexOfPreviewFields]; 
-				[[GRMenu itemAtIndex:indexOfPreviewFields] setToolTip:NSLocalizedString(@"Mark all as read has been disabled",nil)];
-			} else {
-				[[GRMenu insertItemWithTitle:NSLocalizedString(@"Mark all as read",nil) action:@selector(markAllAsRead:) keyEquivalent:@"" atIndex:indexOfPreviewFields] setTarget:self];
-				[[GRMenu itemAtIndex:indexOfPreviewFields] setAttributedTitle:[self makeAttributedMenuString:NSLocalizedString(@"Mark all as read",nil):NSLocalizedString(@"Warning, items online will be marked read",nil)]];
-				[[GRMenu itemAtIndex:indexOfPreviewFields] setToolTip:NSLocalizedString(@"There are more unread items online in the Google Reader interface. This function will cause Google Reader Notifier to mark all as read - whether or not they are visible in the menubar",nil)];
-			}
-
-			[[GRMenu insertItemWithTitle:NSLocalizedString(@"Open all items",nil) action:@selector(openAllItems:) keyEquivalent:@"" atIndex:indexOfPreviewFields] setTarget:self];
-			[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:indexOfPreviewFields];
+		
+		// we don't want to display the Mark all as read if there are more items in the Google Reader Interface
+		// though we check if the users wants to override this
+		
+		if ([[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue] != YES) {			
+			[GRMenu insertItemWithTitle:[NSString stringWithString:NSLocalizedString(@"More unread items exist",nil)] action:nil keyEquivalent:@"" atIndex:indexOfPreviewFields]; 
+			[[GRMenu itemAtIndex:indexOfPreviewFields] setToolTip:NSLocalizedString(@"Mark all as read has been disabled",nil)];
+		} else {
+			[[GRMenu insertItemWithTitle:NSLocalizedString(@"Mark all as read",nil) action:@selector(markAllAsRead:) keyEquivalent:@"" atIndex:indexOfPreviewFields] setTarget:self];
+			[[GRMenu itemAtIndex:indexOfPreviewFields] setAttributedTitle:[self makeAttributedMenuString:NSLocalizedString(@"Mark all as read",nil):NSLocalizedString(@"Warning, items online will be marked read",nil)]];
+			[[GRMenu itemAtIndex:indexOfPreviewFields] setToolTip:NSLocalizedString(@"There are more unread items online in the Google Reader interface. This function will cause Google Reader Notifier to mark all as read - whether or not they are visible in the menubar",nil)];
+		}
+		
+		[[GRMenu insertItemWithTitle:NSLocalizedString(@"Open all items",nil) action:@selector(openAllItems:) keyEquivalent:@"" atIndex:indexOfPreviewFields] setTarget:self];
+		[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:indexOfPreviewFields];
 	} else if ([results count] > 0 && [[prefs valueForKey:@"minimalFunction"] boolValue] != YES) {
-			[[GRMenu insertItemWithTitle:NSLocalizedString(@"Mark all as read",nil) action:@selector(markAllAsRead:) keyEquivalent:@"" atIndex:indexOfPreviewFields] setTarget:self]; 
-			[[GRMenu insertItemWithTitle:NSLocalizedString(@"Open all items",nil) action:@selector(openAllItems:) keyEquivalent:@"" atIndex:indexOfPreviewFields] setTarget:self];
-			[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:indexOfPreviewFields];
+		[[GRMenu insertItemWithTitle:NSLocalizedString(@"Mark all as read",nil) action:@selector(markAllAsRead:) keyEquivalent:@"" atIndex:indexOfPreviewFields] setTarget:self]; 
+		[[GRMenu insertItemWithTitle:NSLocalizedString(@"Open all items",nil) action:@selector(openAllItems:) keyEquivalent:@"" atIndex:indexOfPreviewFields] setTarget:self];
+		[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:indexOfPreviewFields];
 	}
-
+	
 	int newCount = 0;
 	int currentIndexCount = indexOfPreviewFields;
 	
@@ -744,7 +636,7 @@
 			NSString * trimmedTitleTag = [[NSString alloc] initWithString:[self trimDownString:[self flattenHTML:[[titles objectAtIndex:j] stringValue]]:60]];
 			NSString * trimmedSourceTag = [[NSString alloc] initWithString:[self trimDownString:[self flattenHTML:[[sources objectAtIndex:j] stringValue]]:maxLettersInSource]];
 			NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
-
+			
 			[item setAttributedTitle:[self makeAttributedMenuString:trimmedSourceTag:trimmedTitleTag]];
 			if ([[prefs valueForKey:@"dontShowTooltips"] boolValue] != YES) {
 				[item setToolTip:[NSString stringWithFormat:NSLocalizedString(@"Title: %@\nFeed: %@\nGoes to: %@%@",nil), [titles objectAtIndex:j], [[sources objectAtIndex:j] stringValue], [links objectAtIndex:j], [summaries objectAtIndex:j]]];
@@ -764,7 +656,7 @@
 			} else {
 				[itemSecondary setAttributedTitle:[self makeAttributedMenuString:trimmedSourceTag:NSLocalizedString(@"Mark item as read",nil)]];
 			}
-
+			
 			[itemSecondary setKeyEquivalentModifierMask:NSCommandKeyMask];
 			[itemSecondary setAlternate:YES];
 			// even though setting the title twice seems like doing double work, we have to, because [sender title] will always be the last set title!
@@ -781,7 +673,7 @@
 			[item release];
 			[itemSecondary release];
 		}
-			
+		
 		if (![lastIds containsObject:[ids objectAtIndex:j]]){			
 			// Growl help
 			[newItems addObject:[results objectAtIndex:j]];
@@ -791,7 +683,7 @@
 		currentIndexCount++;
 		currentIndexCount++; // the extra one is because we add two menuitems now, one for command-tabbing
 	}
-											
+	
 	if ([results count] == 0) {
 		[statusItem setImage:nounreadItemsImage];
 	} else {
@@ -806,16 +698,16 @@
 			[theSound play];
 			[theSound release];
 		}
-
+		
 		if ([results count] == 0) {
 			[self displayMessage:[NSString stringWithFormat:NSLocalizedString(@"No unread items",nil),[results count]]];
 		} else if ([results count] > 0 && [[prefs valueForKey:@"minimalFunction"] boolValue] == YES && moreUnreadExistInGRInterface == YES) {
 			[self displayMessage:[NSString stringWithFormat:NSLocalizedString(@"More than %d unread items",nil),[results count]]];
 		}
 	}
-
+	
 	if ([[prefs valueForKey:@"showCount"] boolValue] == YES) {
-
+		
 		if (moreUnreadExistInGRInterface == YES) {
 			[statusItem setLength:NSVariableStatusItemLength];
 			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d",totalUnreadItemsInGRInterface]]];
@@ -857,308 +749,266 @@
 	DLog(@"sources count: %d", [sources count]);
 	DLog(@"summaries count: %d", [summaries count]);
 	DLog(@"torrentcastlinks count: %d", [torrentcastlinks count]);
-
-	// threading
-	[pool release];	
 }
 
-- (void)downloadFile:(NSString *)url:(NSString *)filename {
-	NSError * error = nil;
-	NSURLResponse * response;
-	NSData * dataReply;
-	NSMutableURLRequest * DownloadRequest = [NSMutableURLRequest  requestWithURL: [NSURL URLWithString:url]];
-	[DownloadRequest setTimeoutInterval:5.0];
-	[DownloadRequest setHTTPMethod:@"GET"]; // Changing the setHTTPMethod to "POST" sends the HTTPBody
-	dataReply = [NSURLConnection sendSynchronousRequest:DownloadRequest returningResponse:&response error:&error];
-	[dataReply writeToFile:[NSString stringWithFormat:@"%@/%@", [prefs valueForKey:@"torrentCastFolderPath"], filename] atomically:YES];
+#pragma mark -
+#pragma mark IPMNetworkManagerDelegate methods
+
+- (void)networkManagerDidReceiveNSStringResponse:(NSString *)response withParam:(id<NSObject>)param {
+	NetParam * nParam = (NetParam *)param;
+	if (nParam.secondParam)
+		[self performSelector:nParam.successMethod withObject:response withObject:nParam.secondParam];
+	else
+		[self performSelector:nParam.successMethod withObject:response];
 }
 
-- (NSString *)loginToGoogle {
-	if ([[prefs valueForKey:@"storedSID"] isEqualToString:@""]) {
-		NSString * stringReply;
-		CFStringRef p1 = CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)[prefs valueForKey:@"Username"], NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8);
-		CFStringRef p2 = CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)[self getUserPasswordFromKeychain], NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8);
-		NSString * params = [NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d", p1, p2, versionBuildNumber];	
-		stringReply = [self sendConnectionRequest:@"https://www.google.com/accounts/ClientLogin":YES:@"":@"POST":params];
-		CFRelease(p1);
-		CFRelease(p2);
-		if ([stringReply isEqualToString:@""]) {
-			storedSID = @""; // userSID = @"";
-			[prefs setObject:@"" forKey:@"storedSID"];
-			[self displayMessage:@"no Internet connection"];
-			[self errorImageOn];
-			[statusItem setMenu:GRMenu];
-			[lastCheckTimer invalidate];
+- (void)networkManagerDidReceiveNSDataResponse:(NSData *)response withParam:(id<NSObject>)param {
+	NetParam * nParam = (NetParam *)param;
+	if (nParam.secondParam)
+		[self performSelector:nParam.successMethod withObject:response withObject:nParam.secondParam];
+	else
+		[self performSelector:nParam.successMethod withObject:response];
+}
+
+- (void)networkManagerDidNotReceiveResponse:(NSError *)error withParam:(id<NSObject>)param {
+	DLog(@"NETWORK ERROR");
+	NetParam * nParam = (NetParam *)param;
+	[self performSelector:nParam.failMethod withObject:error];
+}
+
+- (NSString *)usernameForAuthenticationChallengeWithParam:(id<NSObject>)param {
+	return [[prefs valueForKey:@"Username"] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (NSString *)passwordForAuthenticationChallengeWithParam:(id<NSObject>)param {
+	return [[self getUserPasswordFromKeychain] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+}
+
+#pragma mark Processing
+
+- (void)processLoginToGoogle:(NSString *)result {
+	if ([result isEqualToString:@""]) {
+		storedSID = @""; // userSID = @"";
+		[prefs setObject:@"" forKey:@"storedSID"];
+		[self displayMessage:@"no Internet connection"];
+		[self errorImageOn];
+		[statusItem setMenu:GRMenu];
+		[lastCheckTimer invalidate];
+		[self createLastCheckTimer];
+		[lastCheckTimer fire];		
+	} else {
+		NSScanner * theScanner;
+		theScanner = [NSScanner scannerWithString:[NSString stringWithString:result]];
+		if ([theScanner scanString:@"SID=" intoString:NULL] &&
+			[theScanner scanUpToString:@"\nLSID=" intoString:&storedSID]) {
+			storedSID = [NSString stringWithFormat:@"SID=%@;",storedSID];
+			networkManager.sid = storedSID;
+			[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
+			[mainTimer fire];
 			[self createLastCheckTimer];
-			[lastCheckTimer fire];		
+			[lastCheckTimer fire];
 		} else {
-			NSScanner * theScanner;
-			theScanner = [NSScanner scannerWithString:[NSString stringWithString:stringReply]];
-			if ([theScanner scanString:@"SID=" intoString:NULL] &&
-				[theScanner scanUpToString:@"\nLSID=" intoString:&storedSID]) {
-				storedSID = [NSString stringWithFormat:@"SID=%@;",storedSID];
-				[prefs setObject:storedSID forKey:@"storedSID"];
+			if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
+				[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
+				[self displayMessage:@"please enter login details"];
+			} else if ([[prefs valueForKey:@"Username"] isEqualToString:@""] || [prefs valueForKey:@"Username"] == NULL) {
+				[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
+				[self displayMessage:@"please enter login details"];
 			} else {
-				if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
-					[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
-					[self displayMessage:@"please enter login details"];
-				} else if ([[prefs valueForKey:@"Username"] isEqualToString:@""] || [prefs valueForKey:@"Username"] == NULL) {
-					[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
-					[self displayMessage:@"please enter login details"];
-				} else {
-					[self displayAlert:NSLocalizedString(@"Authentication error",nil):[NSString stringWithFormat:@"Reader Notifier could not handshake with Google. You probably have entered a wrong user or pass. The error supplied by Google servers was: %@", stringReply]];
-					[self displayMessage:@"wrong user or pass"];				
-				}
-				
-				storedSID = @"";
-				[prefs setObject:@"" forKey:@"storedSID"];
-				[self errorImageOn];
+				[self displayAlert:NSLocalizedString(@"Authentication error",nil):[NSString stringWithFormat:@"Reader Notifier could not handshake with Google. You probably have entered a wrong user or pass. The error supplied by Google servers was: %@", result]];
+				[self displayMessage:@"wrong user or pass"];				
 			}
+			storedSID = @"";
+			[self errorImageOn];
 		}
-		[stringReply release];
+		[prefs setObject:storedSID forKey:@"storedSID"];
+	}
+}
+
+- (void)processGoogleFeed:(NSData *)result {
+	NSXMLDocument * atomdoc = [[NSXMLDocument alloc] initWithData:result options:0 error:&xmlError];	
+	
+	[titles addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/title/text()" error:NULL]];
+	[sources addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/title/text()" error:NULL]];
+	[ids addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/id/text()" error:NULL]];
+	[feeds addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/@gr:stream-id" error:NULL]];
+	[user addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/id/text()" error:NULL]];
+	
+	DLog(@"retrieveGoogleFeed 1");
+	
+	int k = 0;
+	for(k = 0; k < [titles count]; k++) {
+		NSMutableArray * tempArray0 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@rel='alternate']/@href",k+1] error:NULL]];
+		if([tempArray0 count] > 0){
+			[links insertObject:[[tempArray0 objectAtIndex:0] stringValue] atIndex:k];
+		} else {
+			[links insertObject:@"" atIndex:k];
+		}
+		[tempArray0 release];
 	}
 	
-	return [prefs valueForKey:@"storedSID"];
+	DLog(@"retrieveGoogleFeed 2");
 	
-}
-
-- (NSString *)getTokenFromGoogle {
-	return [self sendConnectionRequest:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/token", [self getURLPrefix]]:YES:[self loginToGoogle]:@"GET":@""];	
-}
-
-- (void)markOneAsStarredDetached:(NSNumber *)aNumber {
-	// threading
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	
-	int index = [aNumber intValue];
-	
-	NSString * feedstring;
-	feedstring = [self searchAndReplace:@":":@"%3A":[feeds objectAtIndex:index]];
-	feedstring = [self searchAndReplace:@"/":@"%2F":feedstring];
-	feedstring = [self searchAndReplace:@"=":@"-":feedstring];
-	
-	NSString * idsstring;
-	idsstring = [self searchAndReplace:@"/":@"%2F":[ids objectAtIndex:index]];
-	idsstring = [self searchAndReplace:@",":@"%2C":idsstring];
-	idsstring = [self searchAndReplace:@":":@"%3A":idsstring];
-	
-	[self sendConnectionRequest:[NSString stringWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=scroll", [self getURLPrefix]]]:YES:[self loginToGoogle]:@"POST":[NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F%@%%2Fstate%%2Fcom.google%%2Fstarred&T=%@", feedstring, idsstring, [self grabUserNo], [self getTokenFromGoogle]]];
-	
-	[NSThread detachNewThreadSelector:@selector(markOneAsReadDetached:) toTarget:self withObject:[NSNumber numberWithInt:index]];
-	
-	// threading
-	[pool release];
-}
-
-- (void)markOneAsReadDetached:(NSNumber *)aNumber {
-	// threading
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	
-	DLog(@"markOneAsReadDetatched begin");
-	
-	int index = [aNumber intValue];
-	
-	if ([feeds count] >= index+1 && [feeds count] >= index+1) {
-		
-		// we replace all instances of = to %3D for google
-		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:index]];
-		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
-		[self sendConnectionRequest:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",[self getURLPrefix],feedstring,[ids objectAtIndex:index],[self getTokenFromGoogle]]:YES:[self loginToGoogle]:@"POST":@""];
-		[feedstring release];
-		// at the end of this we will also remove the tempMenuSec and insert GRMenu
-		[self removeOneItemFromMenu:index];
-	} else {
-		DLog(@"markOneAsReadDetatched - there was not enough items in feeds or ids array");
+	int m = 0;
+	for (m = 0; m < [titles count]; m++) {
+		NSMutableArray * tempArray2 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/summary/text()",m+1] error:NULL]];
+		if ( [tempArray2 count]>0 ) {
+			[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [self flattenHTML:[self trimDownString:[[tempArray2 objectAtIndex:0] stringValue]:maxLettersInSummary]]] atIndex:m];
+		} else {
+			NSMutableArray * tempArray3 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/content/text()",m+1] error:NULL]];
+			if( [tempArray3 count]>0 ) {
+				[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [self flattenHTML:[self trimDownString:[[tempArray3 objectAtIndex:0] stringValue]:maxLettersInSummary]]] atIndex:m];
+			} else {
+				[summaries insertObject:@"" atIndex:m];
+			}
+			[tempArray3 release];
+		}
+		[tempArray2 release];
 	}
 	
-	currentlyFetchingAndUpdating = NO;
+	DLog(@"retrieveGoogleFeed 2a");
 	
-	DLog(@"markOneAsReadDetatched end");
-	// threading
-	[pool release];
-}
-
-- (void)markResultsAsReadDetached {
-	// threading
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+	// torrentcasting
+	int l;
+	for (l=0; l<[titles count]; l++) {
+		NSMutableArray * tempArray2 = [[NSMutableArray alloc] initWithArray:[atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@type='application/x-bittorrent']/@href",l+1] error:NULL]];
+		if ( [tempArray2 count]>0 ) {
+			[torrentcastlinks insertObject:[[tempArray2 objectAtIndex:0] stringValue] atIndex:l];
+		} else {
+			[torrentcastlinks insertObject:@"" atIndex:l];
+		}
+		[tempArray2 release];
+	}
+	
+	DLog(@"retrieveGoogleFeed 3");
 	int j = 0;
-	for (j = 0; j < [results count]; j++) {
-		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:j]];
-		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
-		[self sendConnectionRequest:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",[self getURLPrefix],feedstring,[ids objectAtIndex:j],[self getTokenFromGoogle]]:YES:[self loginToGoogle]:@"POST":@""];
-		[feedstring release];
+	for(j = 0; j < [feeds count]; j++) {
+		[feeds replaceObjectAtIndex:j withObject:[[feeds objectAtIndex:j] stringValue]];
 	}
 	
-	currentlyFetchingAndUpdating = NO;
-	// the statusItem is actually still tempMenuSec, but it doesn't matter because It'll go back to GRMenu after the end of CheckNow
-	[NSThread detachNewThreadSelector:@selector(checkNow:) toTarget:self withObject:nil];
+	DLog(@"retrieveGoogleFeed 4");
+	int d;
+	for(d=0; d<[ids count]; d++){
+		[ids replaceObjectAtIndex:d withObject:[[ids objectAtIndex:d] stringValue]];
+	}
 	
-	// threading
-	[pool release];
-}
-
-- (void)markAllAsReadDetached {
-	// threading
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	
-	[statusItem setMenu:tempMenuSec];
+	DLog(@"retrieveGoogleFeed 5");
+	[atomdoc release];
 	
-	if ([self getUnreadCount] == [results count] || [[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue] == YES) {
-		[self sendConnectionRequest:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/mark-all-as-read?client=scroll", [self getURLPrefix]]:YES:[self loginToGoogle]:@"POST":[NSString stringWithFormat:@"s=user%%2F%@%%2F%@&T=%@", [self grabUserNo], [self searchAndReplace:@"/" :@"%2F" :[self getLabel]], [self getTokenFromGoogle]]];
-		[lastIds setArray:ids];
-		[results removeAllObjects];
-		[feeds removeAllObjects];
-		[ids removeAllObjects];
-		[links removeAllObjects];
-		[titles removeAllObjects];
-		[sources removeAllObjects];
+	DLog(@"retrieveGoogleFeed 6");
+	
+	if (xmlError != nil) {
+		// TODO: something here?
+	} else {
+		// We need to set the global whether there are (at least one) more unread items online in the google reader interface
+		if ([titles count] > [[prefs valueForKey:@"maxItems"] intValue]) {
+			moreUnreadExistInGRInterface = YES;
+			// We also remove the last item, since we do not wish to display it anywhere, or fuck up the count
+			//  note, we remove the first item, which is actually the oldest (we reversed the array earlier)
+			//  ! we could actually skip all the maxItems checks later, but they're nice to have.
+			/// UPDATE! We do not reverse it any longer! So now we just remove the last item
+			
+			DLog(@"retrieveGoogleFeed 6");
+			
+			if ([ids count] > 0) {
+				[titles removeLastObject];
+				[sources removeLastObject];
+				[ids removeLastObject];
+				[feeds removeLastObject];
+				[links removeLastObject];
+				[summaries removeLastObject];
+				[torrentcastlinks removeLastObject];
+			}
+			
+			DLog(@"retrieveGoogleFeed 7");
+			
+			// while we know that there are extra unread items, we want to get the exact count of them, 
+			// the totalUnreadItemsInGRInterface will be updated automatically
+			
+			//// HERE THERE IS AN ERROR!!! **** this call makes a memory-error
+			[self getUnreadCount];			
+		} else {
+			moreUnreadExistInGRInterface = NO;
+		}
+		
+		// threading
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
-	} else {
-		if (totalUnreadItemsInGRInterface != -1) {
-			[self displayAlert:NSLocalizedString(@"Warning",nil) :NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.",nil)];
-			[self retrieveGoogleFeed];
-			DLog(@"Error marking all as read");
-		}
 	}
-	[pool release];
+
+	DLog(@"retrieveGoogleFeed end");
 }
 
-- (void)markOneAsStarred:(int)index {
-	NSString * feedstring;
-	feedstring = [self searchAndReplace:@":":@"%3A":[feeds objectAtIndex:index]];
-	feedstring = [self searchAndReplace:@"/":@"%2F":feedstring];
-	feedstring = [self searchAndReplace:@"=":@"-":feedstring];
+- (void)processFailGoogleFeed:(NSError *)error {
+	[self errorImageOn]; 
+	currentlyFetchingAndUpdating = NO;
+	[lastCheckTimer invalidate];
+	[self createLastCheckTimer];
+	[lastCheckTimer fire];
+	[statusItem setMenu:GRMenu];
+}
+
+- (void)processUnreadCount:(NSData *)result {
+	NSXMLDocument * atomdoc2 = [[NSXMLDocument alloc] initWithData:result options:0 error:&xmlError];	
+	DLog(@"getUnreadCount1");
+	NSMutableArray * tempArray5 = [[NSMutableArray alloc] init];
 	
-	NSString * idsstring;
-	idsstring = [self searchAndReplace:@"/":@"%2F":[[ids objectAtIndex:index] stringValue]];
-	idsstring = [self searchAndReplace:@",":@"%2C":idsstring];
-	idsstring = [self searchAndReplace:@":":@"%3A":idsstring];
+	DLog(@"getUnreadCount2");
 	
-	NSURL * markOneAsReadUrl = [NSURL URLWithString:[NSString stringWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=scroll", [self getURLPrefix]]]];
-	NSMutableURLRequest * markOneRead = [NSMutableURLRequest requestWithURL:markOneAsReadUrl];
-	[markOneRead setHTTPMethod:@"POST"];
-	
-	NSString * sendString = [NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F%@%%2Fstate%%2Fcom.google%%2Fstarred&T=%@", feedstring, idsstring, [self grabUserNo], [self getTokenFromGoogle]];	
-	
-	[markOneRead setHTTPBody:[sendString dataUsingEncoding:NSUTF8StringEncoding]];
-	if (isLeopard) {
-		[markOneRead setHTTPShouldHandleCookies:NO];
+	// if the user is on labels, use that to check instead!
+	if ([[prefs valueForKey:@"Label"] isEqualToString:@""]) {
+		[tempArray5 addObjectsFromArray:[atomdoc2 objectsForXQuery:@"for $x in /object/list/object where $x/string[contains(., 'reading-list')] return $x/number[@name=\"count\"]/text()" error:NULL]];  // peters add
 	} else {
-		[markOneRead setHTTPShouldHandleCookies:YES];
+		DLog(@"getUnreadCount haslabel");
+		[tempArray5 addObjectsFromArray:[atomdoc2 objectsForXQuery:[NSString stringWithFormat:@"for $x in /object/list/object where $x/string[contains(., '/label/%@')] return $x/number[@name=\"count\"]/text()", [prefs valueForKey:@"Label"]] error:NULL]]; // peters add
 	}
 	
-	[markOneRead setTimeoutInterval:5.0];
-	[markOneRead setValue:[self loginToGoogle] forHTTPHeaderField:@"Cookie"];
-	NSURLConnection * markOneAsRead = [NSURLConnection connectionWithRequest:markOneRead delegate:self];
-	// TODO: uhm, what here?
-	if (markOneAsRead) {
-		
-	} else {
-		// DLog(@"Oops");
-	}
-}
-
-- (void)addFeed:(NSString *)url {
-	if ([[prefs valueForKey:@"dontVerifySubscription"] boolValue] != YES) {
-		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[[NSString stringWithFormat:@"%@://www.google.com/reader/preview/*/feed/", [self getURLPrefix]] stringByAppendingString:[NSString stringWithFormat:@"%@", CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)url, NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8)]]]];
-	} else {
-		// Here we should implement a check if there actually is no feed there :(
-		NSURL * posturl = [NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/quickadd", [self getURLPrefix]]];
-		NSMutableURLRequest * postread = [NSMutableURLRequest requestWithURL:posturl];
-		[postread setTimeoutInterval:5.0];
-		NSString * sendString = [NSString stringWithFormat:@"quickadd=%@&T=%@", CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)url, NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8), [self getTokenFromGoogle]];
-		[postread setHTTPBody:[sendString dataUsingEncoding:NSUTF8StringEncoding]];
-		if (isLeopard) {
-			[postread setHTTPShouldHandleCookies:NO];
-		} else {
-			[postread setHTTPShouldHandleCookies:YES];
-		}
-		[postread setValue:[self loginToGoogle] forHTTPHeaderField:@"Cookie"];
-		[postread setHTTPMethod:@"POST"];
-		NSURLConnection * subscribeReq = [NSURLConnection connectionWithRequest:postread delegate:self];
-		if (subscribeReq) {
-			// we need to sleep a little
-			NSDate * sleepUntil = [NSDate dateWithTimeIntervalSinceNow:1.5];
-			[NSThread sleepUntilDate:sleepUntil];
-			[self checkNow:nil];	
-		} else {
-			DLog(@"Oops, the subscription did not make it through");
-		}
-	}
-}
-
-- (void)markOneAsRead:(int)index {
-	// threading
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	// we replace all instances of = to %3D for google
-	NSMutableString * feedstring = [[feeds objectAtIndex:index] mutableCopy];
-	[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
 	
-	NSURL * posturl = [NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",[self getURLPrefix],feedstring,[ids objectAtIndex:index],[self getTokenFromGoogle]]];
-	NSMutableURLRequest * postread = [NSMutableURLRequest requestWithURL:posturl];
-	[postread setTimeoutInterval:5.0];
-	if (isLeopard) {
-		[postread setHTTPShouldHandleCookies:NO];
-	} else {
-		[postread setHTTPShouldHandleCookies:YES];
-	}
-	[postread setValue:[self loginToGoogle] forHTTPHeaderField:@"Cookie"];
-	[postread setHTTPMethod:@"POST"];
-	NSURLConnection * markread = [NSURLConnection connectionWithRequest:postread delegate:self];
-	
-	// TODO: what to do here?
-	if (markread) {
-		
-	} else {
-		// DLog(@"Oops");
+	int k = 0, t = 0;
+	NSString * dString;
+	for (k = 0; k < [tempArray5 count]; k++) {
+		dString = [[tempArray5 objectAtIndex:k] stringValue];
+		t = t + [dString intValue];
 	}
 	
-	// threading
-	[pool release];
+	DLog(@"getUnreadCount3");
+	
+	[tempArray5 release];
+	[atomdoc2 release];
+	
+	DLog(@"The total count of unread items is now %d", t);
+	totalUnreadItemsInGRInterface = t;
+	if (!currentlyFetchingAndUpdating)
+		[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
 }
 
-#pragma mark Callbacks
-
-- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-	// TODO: what to do here?
-	//if([[[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding] isEqualToString:@"OK"]){
-	//}
+- (void)processFailUnreadCount:(NSError *)error {
+	totalUnreadItemsInGRInterface = -1;
+	[self errorImageOn]; 
+	currentlyFetchingAndUpdating = NO;
+	[lastCheckTimer invalidate];
+	[self createLastCheckTimer];
+	[lastCheckTimer fire];
+	[statusItem setMenu:GRMenu];
 }
 
-- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	// TODO: what do do here?
-    //DLog([response description]);
+- (void)processDownloadFile:(NSString *)filename withData:(NSData *)result {
+	[result writeToFile:[NSString stringWithFormat:@"%@/%@", [prefs valueForKey:@"torrentCastFolderPath"], filename] atomically:YES];
 }
 
-- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
-	DLog(@"Connection failed! Error - %@ %@",
-		 [error localizedDescription],
-		 [[error userInfo] objectForKey:NSURLErrorFailingURLStringErrorKey]);
-}
-
-- (void)connectionDidFinishLoading:(NSURLConnection *)connection {
-	// TODO: what to do here?
-	//[connection release];
+- (void)processTokenFromGoogle:(NSString *)result {
+	if (currentToken)
+		[currentToken release];
+	currentToken = [result retain];
 }
 
 #pragma mark -
 #pragma mark Others
 
-- (void)notificationTest1 {
-	[self performSelectorOnMainThread:@selector(updateMenu) withObject:nil waitUntilDone:NO];
-}
-
-- (void)notificationTest2 {
-	NSDate * sleepUntil = [NSDate dateWithTimeIntervalSinceNow:8.0];
-	[NSThread sleepUntilDate:sleepUntil];
-	
-	[lastCheckTimer invalidate];
-	[self createLastCheckTimer];
-	[lastCheckTimer fire];
-}
-
-- (void)windowWillClose:(NSNotification *)aNotification {
-	// TODO: used?
+- (void)awakenFromSleep {
+	DLog(@"AWAKEN FROM SLEEP");
+	[prefs setValue:@"" forKey:@"storedSID"];
+	[self loginToGoogle];
 }
 
 - (void)createLastCheckTimer {
@@ -1167,7 +1017,7 @@
 		[lastCheckTimer invalidate];
 		[lastCheckTimer release];
 	}
-	lastCheckTimer = [[NSTimer scheduledTimerWithTimeInterval:(60) target:self selector:@selector(lastTimeCheckedTimer:) userInfo:nil repeats:YES] retain];
+	lastCheckTimer = [[NSTimer scheduledTimerWithTimeInterval:60 target:self selector:@selector(lastTimeCheckedTimer:) userInfo:nil repeats:YES] retain];
 }
 
 //creates a timer with a user-specified delay, fires the timer
@@ -1188,10 +1038,11 @@
 }
 
 - (void)lastTimeCheckedTimer:(NSTimer *)timer {
+	[self getTokenFromGoogle];
 	if (lastCheckMinute > [[prefs valueForKey:@"timeDelay"] intValue]) {
 		DLog(@"lastTimeChecked is more than it should be, so we run update");
 		if (currentlyFetchingAndUpdating != YES)
-			[NSThread detachNewThreadSelector:@selector(checkNow:) toTarget:self withObject:nil];
+			[self checkNow:nil];
 	} else {
 		DLog(@"lastTimeCheckedTimer run %d", lastCheckMinute);
 		if (lastCheckMinute == 0) {
@@ -1215,18 +1066,13 @@
 
 - (void)displayAlert:(NSString *) headerText:(NSString *) bodyText {
 	[NSApp activateIgnoringOtherApps:YES];		
-	NSAlert * theAlert = [[NSAlert alloc] init];
-	theAlert = [NSAlert alertWithMessageText:headerText
-							   defaultButton:NSLocalizedString(@"Thanks",nil)
-							 alternateButton:nil
-								 otherButton:nil
-				   informativeTextWithFormat:bodyText];
+	NSAlert * theAlert = [NSAlert alertWithMessageText:headerText
+										 defaultButton:NSLocalizedString(@"Thanks",nil)
+									   alternateButton:nil
+										   otherButton:nil
+							 informativeTextWithFormat:bodyText];
 	
-	[self performSelectorOnMainThread:@selector(displayAlertOnMainThread:) withObject:theAlert waitUntilDone:YES];
-}
-
-- (void)displayAlertOnMainThread:(NSAlert *)aAlert {
-	[aAlert runModal];
+	[theAlert runModal];
 }
 
 - (void)removeNumberOfItemsFromMenubar:(int) number {
@@ -1317,11 +1163,8 @@
 }
 
 - (void)checkNowWithDelayDetached:(NSNumber *)delay {
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	NSDate * sleepUntil = [NSDate dateWithTimeIntervalSinceNow:[delay floatValue]];
-	[NSThread sleepUntilDate:sleepUntil];
+	[NSThread sleepForTimeInterval:[delay floatValue]];
 	[self checkNow:nil];
-	[pool release];
 }
 
 - (void)removeOneItemFromMenu:(int)index {
