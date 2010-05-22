@@ -67,7 +67,7 @@
 }
 
 - (void)downloadFile:(NSString *)filename atUrl:(NSString *)url;
-- (void)removeNumberOfItemsFromMenubar:(int) number;
+- (void)removeNumberOfItemsFromMenubar:(NSInteger)number;
 - (NSAttributedString *)makeAttributedStatusItemString:(NSString *)text;
 - (NSAttributedString *)makeAttributedMenuStringWithBigText:(NSString *)bigtext andSmallText:(NSString *)smalltext;
 - (void)addFeed:(NSString *)url;
@@ -77,12 +77,12 @@
 - (NSString *)loginToGoogle;
 - (void)removeAllItemsFromMenubar;
 - (void)getTokenFromGoogle;
-- (void)removeOneItemFromMenu:(int)index;
+- (void)removeOneItemFromMenu:(NSInteger)index;
 - (void)timer:(NSTimer *)timer;
 - (void)getUnreadCount;
 - (void)retrieveGoogleFeed;
 - (void)updateMenu;
-- (void)setTimeDelay:(int)x;
+- (void)setTimeDelay:(NSInteger)x;
 - (NSString *)getLabel;
 - (void)errorImageOn;
 - (NSString *)getURLPrefix;

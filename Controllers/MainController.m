@@ -86,37 +86,33 @@
 	[prefs release];
 	[networkManager release];
 	[currentToken release];
+	[nounreadItemsImage release];
+	[unreadItemsImage release];
+	[errorImage release];
+	[highlightedImage release];
     [super dealloc];
 }
 
 - (void)awakeFromNib {
 	[NSApp activateIgnoringOtherApps:YES];
-	
 	// Get system version
 	NSDictionary * dict = [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
 	NSString * versionString = [dict objectForKey:@"ProductVersion"];
 	NSArray * array = [versionString componentsSeparatedByString:@"."];
-	int count = [array count];
-	int major = (count >= 1) ? [[array objectAtIndex:0] intValue] : 0;
-	int minor = (count >= 2) ? [[array objectAtIndex:1] intValue] : 0;
-	
-	if (major > 10 || major == 10 && minor >= 5) {
+	NSUInteger count = [array count];
+	NSInteger major = (count >= 1) ? [[array objectAtIndex:0] integerValue] : 0;
+	NSInteger minor = (count >= 2) ? [[array objectAtIndex:1] integerValue] : 0;
+	if (major > 10 || major == 10 && minor >= 5)
 		isLeopard = YES;
-	} else {
+	else
 		isLeopard = NO;
-	}
-	
 	// Growl
 	[GrowlApplicationBridge setGrowlDelegate:self];
-	
 	[prefs setObject:@"" forKey:@"storedSID"];
-	
-	if ([[prefs valueForKey:@"useColoredNoUnreadItemsIcon"] intValue] == 1) {
+	if ([[prefs valueForKey:@"useColoredNoUnreadItemsIcon"] intValue] == 1)
 		nounreadItemsImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"nounreadalt" ofType:@"png"]];	
-	} else {
+	else
 		nounreadItemsImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"nounread" ofType:@"png"]];
-	}
-	
 	if ([[prefs valueForKey:@"useColoredNoUnreadItemsIcon"] intValue] == 2) {
 		unreadItemsImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"nounread" ofType:@"png"]];
 		errorImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"bwerror" ofType:@"png"]];
@@ -124,9 +120,7 @@
 		unreadItemsImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"unread" ofType:@"png"]];
 		errorImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"error" ofType:@"png"]];
 	}
-	
 	highlightedImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"highunread" ofType:@"png"]];
-	
 	statusItem = [[[NSStatusBar systemStatusBar] statusItemWithLength:ourStatusItemWithLength] retain]; //NSVariableStatusItemLength] retain];
 	[statusItem setHighlightMode:YES];
 	[statusItem setTitle:@""];
@@ -199,7 +193,7 @@
 			if (!currentlyFetchingAndUpdating) {
 				// threading
 				[mainTimer invalidate];	
-				[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
+				[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] integerValue]];
 				[self retrieveGoogleFeed];
 			}
 		}
@@ -232,29 +226,26 @@
 
 - (IBAction)launchLink:(id)sender {
 	DLog(@"launchLink begin");
-	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored (we make use of the id - and hopefully it will be an absolute). 
+	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored 
+	// (we make use of the id - and hopefully it will be an absolute). 
 	if ([ids containsObject:[sender title]]) {
 		currentlyFetchingAndUpdating = YES;
 		[statusItem setMenu:tempMenuSec];
 		if ([[prefs valueForKey:@"showCount"] boolValue])
 			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d",[results count]-1]]];
 		int index = [ids indexOfObjectIdenticalTo:[sender title]];
-		
 		DLog(@"Index is %d", index);
 		DLog(@"NUMBER OF ITEMS IS, %d", [GRMenu numberOfItems]);
-		
 		if ([GRMenu numberOfItems] == 9) {
 			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
 			[GRMenu removeItemAtIndex:index+indexOfPreviewFields]; // the shaddow (optional-click
 			[GRMenu removeItemAtIndex:index+indexOfPreviewFields]; // the space-line
-		} else {
+		} else
 			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
-		}
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:index]]];
 		[self markOneAsReadDetached:[NSNumber numberWithInt:index]];
-	} else {
+	} else
 		DLog(@"Item has already gone away, so we cannot refetch it");
-	}
 	DLog(@"launchLink end");	
 }
 
@@ -292,36 +283,28 @@
 
 - (IBAction)addFeedFromUI:(id)sender {
 	[addfeedwindow close];
-	
 	[self addFeed:[addNewFeedUrlField stringValue]];
 }
 
 - (IBAction)checkGoogleAuth:(id)sender {
 	storedSID = @"";
-	
 	[prefs setObject:[NSString stringWithString:[usernameField stringValue]] forKey:@"Username"];
-	
 	NSString * password = [passwordField stringValue];
-	
-	if ([Keychain checkForExistanceOfKeychain] > 0) {
+	if ([Keychain checkForExistanceOfKeychain] > 0)
 		[Keychain modifyKeychainItem:password];
-	} else {
+	else
 		[Keychain addKeychainItem:password];
-	}
-	
 	if (![[self loginToGoogle] isEqualToString:@""]) {
 		[self displayAlert:NSLocalizedString(@"Success",nil):NSLocalizedString(@"You are now connected to Google",nil)];
 		[mainTimer invalidate];
-		[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
+		[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] integerValue]];
 		[mainTimer fire];
-	} else {
-		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"Unable to connect to Google with user details",nil)];	
-	}
+	} else
+		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"Unable to connect to Google with user details",nil)];
 }
 
 - (IBAction)selectTorrentCastFolder:(id)sender {
-	NSOpenPanel * op = [[NSOpenPanel openPanel] retain];
-	
+	NSOpenPanel * op = [NSOpenPanel openPanel];
 	[op setCanChooseDirectories:YES];
 	[op setCanChooseFiles:NO];
 	[op setAllowsMultipleSelection:NO];
@@ -340,9 +323,8 @@
 
 - (void)growlNotificationWasClicked:(id)clickContext {
 	// This doesn't seem to work correctly
-	while (currentlyFetchingAndUpdating) { // TODO: get rid of this busy waiting...
+	while (currentlyFetchingAndUpdating) // TODO: get rid of this busy waiting...
 		DLog(@"Growl click: We are currently updating and fetching... waiting");
-	}
 	DLog(@"Growl click: Running...not waiting");
 	currentlyFetchingAndUpdating == YES; // TODO: WTF is this? need to investigate more this method, as it is now seems like a big mess
 	if ([ids containsObject:clickContext])
@@ -373,7 +355,6 @@
 	// since .99 this has provided a memory error (case of Moore).
 	// we've tried to fix it with releasing atomdoc2 and temparray5 (and not releasing dstring)
 	// http://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=json&ck=1165697710220&client=scroll
-
 	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=xml&client=scroll", [self getURLPrefix]];
 	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processUnreadCount:) andFail:@selector(processFailUnreadCount:)];
 	[networkManager retrieveDataAtUrl:url withDelegate:self andParam:np];
@@ -436,16 +417,13 @@
 }
 
 - (void)markOneAsStarredDetached:(NSNumber *)aNumber {
-	int index = [aNumber intValue];
-	
+	NSInteger index = [aNumber integerValue];
 	NSString * feedstring = [[feeds objectAtIndex:index] stringByReplacingOccurrencesOfString:@":" withString:@"%3A"];
 	feedstring = [feedstring stringByReplacingOccurrencesOfString:@"/" withString:@"%2F"];
 	feedstring = [feedstring stringByReplacingOccurrencesOfString:@"=" withString:@"-"];
-	
 	NSString * idsstring = [[ids objectAtIndex:index] stringByReplacingOccurrencesOfString:@"/" withString:@"%2F"];
 	idsstring = [idsstring stringByReplacingOccurrencesOfString:@"," withString:@"%2C"];
 	idsstring = [idsstring stringByReplacingOccurrencesOfString:@":" withString:@"%2A"];
-	
 	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=scroll", [self getURLPrefix]];
 	NSString * body = [NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F%@%%2Fstate%%2Fcom.google%%2Fstarred&T=%@", 
 					   feedstring, idsstring, [self grabUserNo], currentToken];
@@ -455,10 +433,8 @@
 
 - (void)markOneAsReadDetached:(NSNumber *)aNumber {
 	DLog(@"markOneAsReadDetatched begin");
-	
-	int index = [aNumber intValue];
-	
-	if ([feeds count] >= index+1 && [feeds count] >= index+1) {
+	NSInteger index = [aNumber integerValue];
+	if ([feeds count] > index) {
 		// we replace all instances of = to %3D for google
 		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:index]];
 		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
@@ -475,7 +451,7 @@
 }
 
 - (void)markResultsAsReadDetached {
-	int j = 0;
+	NSUInteger j = 0;
 	for (j = 0; j < [results count]; j++) {
 		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:j]];
 		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
@@ -484,7 +460,6 @@
 		[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
 		[feedstring release];
 	}
-	
 	currentlyFetchingAndUpdating = NO;
 	// the statusItem is actually still tempMenuSec, but it doesn't matter because It'll go back to GRMenu after the end of CheckNow
 	[self checkNow:nil];
@@ -516,14 +491,15 @@
 }
 
 - (void)addFeed:(NSString *)url {
+	NSString * sanitizedUrl = [url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 	if (![[prefs valueForKey:@"dontVerifySubscription"] boolValue]) {
-		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[[NSString stringWithFormat:@"%@://www.google.com/reader/preview/*/feed/", [self getURLPrefix]] stringByAppendingString:[NSString stringWithFormat:@"%@", CFURLCreateStringByAddingPercentEscapes(NULL, (CFStringRef)url, NULL, (CFStringRef)@";/?:@&=+$,", kCFStringEncodingUTF8)]]]];
+		NSString * completeUrl = [NSString stringWithFormat:@"%@://www.google.com/reader/preview/*/feed/%@", [self getURLPrefix], sanitizedUrl];
+		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:completeUrl]];
 	} else {
 		// Here we should implement a check if there actually is no feed there :(
 		NSURL * posturl = [NSURL URLWithString:[NSString stringWithFormat:@"%@://www.google.com/reader/quickadd", [self getURLPrefix]]];
 		NSMutableURLRequest * postread = [NSMutableURLRequest requestWithURL:posturl];
 		[postread setTimeoutInterval:5.0];
-		NSString * sanitizedUrl = [url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]; 
 		NSString * sendString = [NSString stringWithFormat:@"quickadd=%@&T=%@", sanitizedUrl, currentToken];
 		[networkManager sendPOSTNetworkRequest:sendString withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
 		// we need to sleep a little
@@ -749,7 +725,7 @@
 			[theScanner scanUpToString:@"\nLSID=" intoString:&storedSID]) {
 			storedSID = [NSString stringWithFormat:@"SID=%@;",storedSID];
 			networkManager.sid = storedSID;
-			[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] intValue]];
+			[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] integerValue]];
 			[mainTimer fire];
 			[self createLastCheckTimer];
 			[lastCheckTimer fire];
@@ -920,7 +896,7 @@
 }
 
 //creates a timer with a user-specified delay, fires the timer
-- (void)setTimeDelay:(int)x {
+- (void)setTimeDelay:(NSInteger)x {
 	if (mainTimer) {
 		[mainTimer invalidate];
 		[mainTimer release];
@@ -971,30 +947,28 @@
 	[theAlert runModal];
 }
 
-- (void)removeNumberOfItemsFromMenubar:(int) number {
-	int n = number;
-	int v;
-	for(v = itemsExclPreviewFields; v < n; v++) {
+- (void)removeNumberOfItemsFromMenubar:(NSInteger)number {
+	NSInteger v;
+	for(v = itemsExclPreviewFields; v < number; v++) {
 		[[GRMenu itemAtIndex:indexOfPreviewFields] setEnabled:NO];
 		[GRMenu removeItemAtIndex:indexOfPreviewFields];
 	}
 }
 
 - (void)clearMenuAndSetUpdatingState {
-	int n = [GRMenu numberOfItems];
-	int v;
+	NSInteger n = [GRMenu numberOfItems];
+	NSInteger v;
 	for(v = itemsExclPreviewFields; v < n; v++) {
 		[[GRMenu itemAtIndex:indexOfPreviewFields] setEnabled:NO];
 		[GRMenu removeItemAtIndex:indexOfPreviewFields];
 	}	
-	
 	[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:indexOfPreviewFields];
 	[GRMenu insertItemWithTitle:NSLocalizedString(@"Updating...",nil) action:nil keyEquivalent:@"" atIndex:indexOfPreviewFields];
 }
 
 - (void)removeAllItemsFromMenubar {
-	int n = [GRMenu numberOfItems];
-	int v;
+	NSInteger n = [GRMenu numberOfItems];
+	NSInteger v;
 	for(v = itemsExclPreviewFields; v < n; v++) {
 		[[GRMenu itemAtIndex:indexOfPreviewFields] setEnabled:NO];
 		[GRMenu removeItemAtIndex:indexOfPreviewFields];
@@ -1003,7 +977,7 @@
 
 - (void)displayMessage:(NSString *)message {
 	// clear out the previewField so that we can put a "No connection" error
-	int a = [GRMenu numberOfItems], v = 0;
+	NSInteger a = [GRMenu numberOfItems], v = 0;
 	for(v = itemsExclPreviewFields; v < a; v++) {
 		[[GRMenu itemAtIndex:indexOfPreviewFields] setEnabled:NO];
 		[GRMenu removeItemAtIndex:indexOfPreviewFields];
@@ -1063,7 +1037,7 @@
 	[self checkNow:nil];
 }
 
-- (void)removeOneItemFromMenu:(int)index {
+- (void)removeOneItemFromMenu:(NSInteger)index {
 	DLog(@"removeOneItemFromMenu begin");
 	[self printStatus];
 	[lastIds setArray:ids];
@@ -1160,8 +1134,8 @@
 	} else {
 		NSUInteger i;
 		// we don't display the possible extra feed that we grab
-		for(i = 0; i < [newItems count] && i < [[prefs valueForKey:@"maxItems"] intValue]; i++){
-			int notifyindex = [results indexOfObjectIdenticalTo:[newItems objectAtIndex:i]];
+		for (i = 0; i < [newItems count] && i < [[prefs valueForKey:@"maxItems"] intValue]; i++) {
+			NSUInteger notifyindex = [results indexOfObjectIdenticalTo:[newItems objectAtIndex:i]];
 			[GrowlApplicationBridge notifyWithTitle:[NSString stringWithFormat:@"%@",[Utilities flattenHTML:[[sources objectAtIndex:notifyindex] stringValue]]] 
 										description:[NSString stringWithFormat:@"%@",[Utilities flattenHTML:[[titles objectAtIndex:notifyindex] stringValue]]]
 								   notificationName:NSLocalizedString(@"New Unread Items",nil)
@@ -1211,7 +1185,7 @@
 	}
 }
 
-- (void)selectTorrentCastFolderEnded:(NSOpenPanel*)panel returnCode:(int)returnCode contextInfo:(void*)contextInfo {
+- (void)selectTorrentCastFolderEnded:(NSOpenPanel*)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo {
 	if (returnCode == NSOKButton) {
 		NSArray * paths = [panel filenames];
 		NSEnumerator * iter = [paths objectEnumerator];
