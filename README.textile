@@ -1,10 +1,17 @@
-This is a fork of Troels Bay's *Reader Notifier* on Google Code to push active development on the project. Like the original it is released under GPL.
+h3. Contact and About
 
-h3. Download
+Reader Notifier has originally been made by Troels Bay, forked by canbuffi and now actively developed by Mike Godenzi and Claudio Marforio, independent developers living in Europe. Please donate if you enjoy and find the app useful.
+
+h3. Some background
+
+This is a fork of canbuffi's *Reader Notifier* on github (http://github.com/canbuffi) to push active development on the project. Like the original it is released under GPL.
+
+<!-- h3. Download
 
 Download the current Version 1.12 with **Snow Leopard** support right here:
 
 "Reader_Notifier_1.12.zip":http://cloud.github.com/downloads/canbuffi/readernotifier/Reader_Notifier_1.12.zip
+-->
 
 __Here are the original FAQs from Troels Bay's site:__
 
@@ -32,8 +39,4 @@ Reader Notifier is provided as is. It should be fairly easy to understand the ap
 
 h3. Please help if you can
 
-If you are of a creative nature, and want to make new menubar icons (or enhance the existing once) please send me suggestions! Especially the BW image displayed when no unread items exists is a bit rough.
-
-h3. Contact and About
-
-Reader Notifier is made by Troels Bay, an independent developer living in Europe. Please donate if you enjoy and find the app useful. If you want to do business feel free to skip through my resume at linkedin. 
+If you are of a creative nature, and want to make new menubar icons (or enhance the existing once) please send me suggestions! Especially the BW image displayed when no unread items exists is a bit rough. 
