@@ -438,15 +438,13 @@
 - (void)markOneAsStarredDetached:(NSNumber *)aNumber {
 	int index = [aNumber intValue];
 	
-	NSString * feedstring;
-	feedstring = [Utilities search:@":" andReplace:@"%3A" inString:[feeds objectAtIndex:index]];
-	feedstring = [Utilities search:@"/" andReplace:@"%2F" inString:feedstring];
-	feedstring = [Utilities search:@"=" andReplace:@"-" inString:feedstring];
+	NSString * feedstring = [[feeds objectAtIndex:index] stringByReplacingOccurrencesOfString:@":" withString:@"%3A"];
+	feedstring = [feedstring stringByReplacingOccurrencesOfString:@"/" withString:@"%2F"];
+	feedstring = [feedstring stringByReplacingOccurrencesOfString:@"=" withString:@"-"];
 	
-	NSString * idsstring;
-	idsstring = [Utilities search:@"/" andReplace:@"%2F" inString:[ids objectAtIndex:index]];
-	idsstring = [Utilities search:@"," andReplace:@"%2C" inString:idsstring];
-	idsstring = [Utilities search:@":" andReplace:@"%3A" inString:idsstring];
+	NSString * idsstring = [[ids objectAtIndex:index] stringByReplacingOccurrencesOfString:@"/" withString:@"%2F"];
+	idsstring = [idsstring stringByReplacingOccurrencesOfString:@"," withString:@"%2C"];
+	idsstring = [idsstring stringByReplacingOccurrencesOfString:@":" withString:@"%2A"];
 	
 	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=scroll", [self getURLPrefix]];
 	NSString * body = [NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F%@%%2Fstate%%2Fcom.google%%2Fstarred&T=%@", 
@@ -496,8 +494,9 @@
 	[statusItem setMenu:tempMenuSec];
 	if (totalUnreadItemsInGRInterface == [results count] || [[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue]) {
 		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/mark-all-as-read?client=scroll", [self getURLPrefix]];
+		NSString * replacedLabel = [[self getLabel] stringByReplacingOccurrencesOfString:@"/" withString:@"%2F"];
 		NSString * body = [NSString stringWithFormat:@"s=user%%2F%@%%2F%@&T=%@", 
-						   [self grabUserNo], [Utilities search:@"/" andReplace:@"%2F" inString:[self getLabel]], currentToken];
+						   [self grabUserNo], replacedLabel, currentToken];
 		[networkManager sendPOSTNetworkRequest:url withBody:body withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
 		[lastIds setArray:ids];
 		[results removeAllObjects];

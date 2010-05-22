@@ -12,22 +12,10 @@
 @implementation Utilities
 
 + (NSString *)flattenHTML:(NSString *)stringToFlatten {
-	stringToFlatten = [self search:@"&quot;" andReplace:@"\"" inString:stringToFlatten];
-	stringToFlatten = [self search:@"&amp;" andReplace:@"&" inString:stringToFlatten];
-	stringToFlatten = [self search:@"&#39;" andReplace:@"'" inString:stringToFlatten];
+	stringToFlatten = [stringToFlatten stringByReplacingOccurrencesOfString:@"&quot;" withString:@"\""];
+	stringToFlatten = [stringToFlatten stringByReplacingOccurrencesOfString:@"&amp;" withString:@"&"];
+	stringToFlatten = [stringToFlatten stringByReplacingOccurrencesOfString:@"&#39;" withString:@"'"];
 	return stringToFlatten;
-}
-
-+ (NSString *)search:(NSString *)searchString andReplace:(NSString *)replaceString inString:(NSString *)inString {
-	NSMutableString * mstr;
-	NSRange substr;
-	mstr = [NSMutableString stringWithString:inString];
-	substr = [mstr rangeOfString:searchString];
-	while (substr.location != NSNotFound) {
-		[mstr replaceCharactersInRange:substr withString:replaceString];
-        substr = [mstr rangeOfString:searchString];
-    }
-	return mstr;
 }
 
 + (NSMutableArray *)reverseArray:(NSMutableArray *)array {

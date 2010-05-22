@@ -14,7 +14,6 @@
 }
 
 + (NSString *)flattenHTML:(NSString *)stringToFlatten;
-+ (NSString *)search:(NSString *)searchString andReplace:(NSString *)replaceString inString:(NSString *)inString;
 + (NSMutableArray *)reverseArray:(NSMutableArray *)array;
 + (NSString *)trimDownString:(NSString *)stringToTrim withMaxLenght:(NSInteger)maxLength;
 
