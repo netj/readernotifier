@@ -7,9 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		495B263B11A427E500EE4BEB /* IPMPendingConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 495B263A11A427E500EE4BEB /* IPMPendingConnection.m */; };
-		495B263F11A4285A00EE4BEB /* IPMNetworkManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 495B263E11A4285A00EE4BEB /* IPMNetworkManager.m */; };
 		495B278011A566A300EE4BEB /* NetParam.m in Sources */ = {isa = PBXBuildFile; fileRef = 495B277F11A566A300EE4BEB /* NetParam.m */; };
+		61747A0F11A7EF9100421C4F /* IPMNetworkManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 61747A0B11A7EF9100421C4F /* IPMNetworkManager.m */; };
+		61747A1011A7EF9100421C4F /* IPMPendingConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 61747A0E11A7EF9100421C4F /* IPMPendingConnection.m */; };
+		61747A1E11A7F04100421C4F /* bwerror.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1811A7F04100421C4F /* bwerror.png */; };
+		61747A1F11A7F04100421C4F /* error.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1911A7F04100421C4F /* error.png */; };
+		61747A2011A7F04100421C4F /* highunread.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1A11A7F04100421C4F /* highunread.png */; };
+		61747A2111A7F04100421C4F /* nounread.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1B11A7F04100421C4F /* nounread.png */; };
+		61747A2211A7F04100421C4F /* nounreadalt.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1C11A7F04100421C4F /* nounreadalt.png */; };
+		61747A2311A7F04100421C4F /* unread.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1D11A7F04100421C4F /* unread.png */; };
+		61747A2511A7F04A00421C4F /* beep.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 61747A2411A7F04A00421C4F /* beep.aiff */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
@@ -18,15 +25,8 @@
 		C708C8CF0B0FBB9B001A9D57 /* Growl.framework in Copy Files (growl) */ = {isa = PBXBuildFile; fileRef = C708C8C40B0FBB68001A9D57 /* Growl.framework */; };
 		C7137ADB0C6A222D00A69B3C /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C7137ADA0C6A222D00A69B3C /* Sparkle.framework */; };
 		C7137AF80C6A22C000A69B3C /* Sparkle.framework in Copy Files (sparkle) */ = {isa = PBXBuildFile; fileRef = C7137ADA0C6A222D00A69B3C /* Sparkle.framework */; };
-		C730B3EA0AFA9AEA00614F08 /* error.png in Resources */ = {isa = PBXBuildFile; fileRef = C730B3E90AFA9AEA00614F08 /* error.png */; };
-		C74A91BE0C6C5D9E004BF883 /* nounreadalt.png in Resources */ = {isa = PBXBuildFile; fileRef = C74A91BD0C6C5D9E004BF883 /* nounreadalt.png */; };
-		C7B3E20A0DA900B400B29ECA /* bwerror.png in Resources */ = {isa = PBXBuildFile; fileRef = C7B3E2090DA900B400B29ECA /* bwerror.png */; };
 		C7C90A530AFA78F70080D14F /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = C7C90A510AFA78F70080D14F /* MainMenu.nib */; };
-		C7C90A5D0AFA790F0080D14F /* beep.aiff in Resources */ = {isa = PBXBuildFile; fileRef = C7C90A540AFA790F0080D14F /* beep.aiff */; };
 		C7C90A5E0AFA790F0080D14F /* MainController.m in Sources */ = {isa = PBXBuildFile; fileRef = C7C90A560AFA790F0080D14F /* MainController.m */; };
-		C7C90A5F0AFA790F0080D14F /* highunread.png in Resources */ = {isa = PBXBuildFile; fileRef = C7C90A570AFA790F0080D14F /* highunread.png */; };
-		C7C90A600AFA790F0080D14F /* nounread.png in Resources */ = {isa = PBXBuildFile; fileRef = C7C90A580AFA790F0080D14F /* nounread.png */; };
-		C7C90A610AFA790F0080D14F /* unread.png in Resources */ = {isa = PBXBuildFile; fileRef = C7C90A590AFA790F0080D14F /* unread.png */; };
 		C7C90A6E0AFA7A020080D14F /* Reader Notifier.icns in Resources */ = {isa = PBXBuildFile; fileRef = C7C90A6D0AFA7A020080D14F /* Reader Notifier.icns */; };
 		C7F2B5EC0B0A566100790961 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C7F2B5EB0B0A566100790961 /* Security.framework */; };
 		C7F2B64B0B0A5E8300790961 /* Keychain.m in Sources */ = {isa = PBXBuildFile; fileRef = C7F2B64A0B0A5E8300790961 /* Keychain.m */; };
@@ -65,14 +65,21 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* Reader Notifier_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Reader Notifier_Prefix.pch"; sourceTree = "<group>"; };
-		495B263911A427E500EE4BEB /* IPMPendingConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMPendingConnection.h; sourceTree = "<group>"; };
-		495B263A11A427E500EE4BEB /* IPMPendingConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMPendingConnection.m; sourceTree = "<group>"; };
-		495B263C11A427FB00EE4BEB /* IPMNetworkManagerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManagerDelegate.h; sourceTree = "<group>"; };
-		495B263D11A4285A00EE4BEB /* IPMNetworkManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManager.h; sourceTree = "<group>"; };
-		495B263E11A4285A00EE4BEB /* IPMNetworkManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMNetworkManager.m; sourceTree = "<group>"; };
-		495B266511A42B4200EE4BEB /* IPMConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMConfiguration.h; sourceTree = "<group>"; };
 		495B277E11A566A300EE4BEB /* NetParam.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetParam.h; sourceTree = "<group>"; };
 		495B277F11A566A300EE4BEB /* NetParam.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NetParam.m; sourceTree = "<group>"; };
+		61747A0911A7EF9100421C4F /* IPMConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMConfiguration.h; sourceTree = "<group>"; };
+		61747A0A11A7EF9100421C4F /* IPMNetworkManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManager.h; sourceTree = "<group>"; };
+		61747A0B11A7EF9100421C4F /* IPMNetworkManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMNetworkManager.m; sourceTree = "<group>"; };
+		61747A0C11A7EF9100421C4F /* IPMNetworkManagerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManagerDelegate.h; sourceTree = "<group>"; };
+		61747A0D11A7EF9100421C4F /* IPMPendingConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMPendingConnection.h; sourceTree = "<group>"; };
+		61747A0E11A7EF9100421C4F /* IPMPendingConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMPendingConnection.m; sourceTree = "<group>"; };
+		61747A1811A7F04100421C4F /* bwerror.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bwerror.png; sourceTree = "<group>"; };
+		61747A1911A7F04100421C4F /* error.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = error.png; sourceTree = "<group>"; };
+		61747A1A11A7F04100421C4F /* highunread.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = highunread.png; sourceTree = "<group>"; };
+		61747A1B11A7F04100421C4F /* nounread.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = nounread.png; sourceTree = "<group>"; };
+		61747A1C11A7F04100421C4F /* nounreadalt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = nounreadalt.png; sourceTree = "<group>"; };
+		61747A1D11A7F04100421C4F /* unread.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = unread.png; sourceTree = "<group>"; };
+		61747A2411A7F04A00421C4F /* beep.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = beep.aiff; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* Reader Notifier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Reader Notifier.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A8BB46F0DCA43F8003AD06B /* Russian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Russian; path = Russian.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -81,16 +88,9 @@
 		9A9876440DCABC01000E61CA /* English */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/Localizable.strings; sourceTree = "<group>"; };
 		C708C8C40B0FBB68001A9D57 /* Growl.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Growl.framework; sourceTree = "<group>"; };
 		C7137ADA0C6A222D00A69B3C /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Sparkle.framework; sourceTree = "<group>"; };
-		C730B3E90AFA9AEA00614F08 /* error.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = error.png; sourceTree = "<group>"; };
-		C74A91BD0C6C5D9E004BF883 /* nounreadalt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = nounreadalt.png; sourceTree = "<group>"; };
-		C7B3E2090DA900B400B29ECA /* bwerror.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bwerror.png; sourceTree = "<group>"; };
 		C7C90A520AFA78F70080D14F /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/MainMenu.nib; sourceTree = "<group>"; };
-		C7C90A540AFA790F0080D14F /* beep.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = beep.aiff; sourceTree = "<group>"; };
 		C7C90A550AFA790F0080D14F /* MainController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = MainController.h; sourceTree = "<group>"; };
 		C7C90A560AFA790F0080D14F /* MainController.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = MainController.m; sourceTree = "<group>"; };
-		C7C90A570AFA790F0080D14F /* highunread.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = highunread.png; sourceTree = "<group>"; };
-		C7C90A580AFA790F0080D14F /* nounread.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = nounread.png; sourceTree = "<group>"; };
-		C7C90A590AFA790F0080D14F /* unread.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = unread.png; sourceTree = "<group>"; };
 		C7C90A6D0AFA7A020080D14F /* Reader Notifier.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Reader Notifier.icns"; sourceTree = "<group>"; };
 		C7F2B5EB0B0A566100790961 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = /System/Library/Frameworks/Security.framework; sourceTree = "<absolute>"; };
 		C7F2B6490B0A5E8300790961 /* Keychain.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Keychain.h; sourceTree = "<group>"; };
@@ -117,16 +117,10 @@
 			children = (
 				C7F2B6490B0A5E8300790961 /* Keychain.h */,
 				C7F2B64A0B0A5E8300790961 /* Keychain.m */,
-				495B266511A42B4200EE4BEB /* IPMConfiguration.h */,
-				495B263D11A4285A00EE4BEB /* IPMNetworkManager.h */,
-				495B263E11A4285A00EE4BEB /* IPMNetworkManager.m */,
-				495B263C11A427FB00EE4BEB /* IPMNetworkManagerDelegate.h */,
-				495B263911A427E500EE4BEB /* IPMPendingConnection.h */,
-				495B263A11A427E500EE4BEB /* IPMPendingConnection.m */,
 				495B277E11A566A300EE4BEB /* NetParam.h */,
 				495B277F11A566A300EE4BEB /* NetParam.m */,
 			);
-			name = Classes;
+			path = Classes;
 			sourceTree = "<group>";
 		};
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
@@ -161,6 +155,7 @@
 		29B97314FDCFA39411CA2CEA /* Reader Notifier */ = {
 			isa = PBXGroup;
 			children = (
+				61747A0011A7EF1A00421C4F /* IPM */,
 				C76E1FEA0B05E240001B400B /* Controllers */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
@@ -183,16 +178,11 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				61747A1611A7F02200421C4F /* Sounds */,
+				61747A1311A7EFBE00421C4F /* Images */,
 				9A8BB4700DCA43F8003AD06B /* Localizable.strings */,
-				C7B3E2090DA900B400B29ECA /* bwerror.png */,
-				C74A91BD0C6C5D9E004BF883 /* nounreadalt.png */,
 				C7C90A510AFA78F70080D14F /* MainMenu.nib */,
-				C730B3E90AFA9AEA00614F08 /* error.png */,
 				C7C90A6D0AFA7A020080D14F /* Reader Notifier.icns */,
-				C7C90A540AFA790F0080D14F /* beep.aiff */,
-				C7C90A570AFA790F0080D14F /* highunread.png */,
-				C7C90A580AFA790F0080D14F /* nounread.png */,
-				C7C90A590AFA790F0080D14F /* unread.png */,
 				8D1107310486CEB800E47090 /* Info.plist */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
 			);
@@ -208,13 +198,47 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		61747A0011A7EF1A00421C4F /* IPM */ = {
+			isa = PBXGroup;
+			children = (
+				61747A0911A7EF9100421C4F /* IPMConfiguration.h */,
+				61747A0A11A7EF9100421C4F /* IPMNetworkManager.h */,
+				61747A0B11A7EF9100421C4F /* IPMNetworkManager.m */,
+				61747A0C11A7EF9100421C4F /* IPMNetworkManagerDelegate.h */,
+				61747A0D11A7EF9100421C4F /* IPMPendingConnection.h */,
+				61747A0E11A7EF9100421C4F /* IPMPendingConnection.m */,
+			);
+			path = IPM;
+			sourceTree = "<group>";
+		};
+		61747A1311A7EFBE00421C4F /* Images */ = {
+			isa = PBXGroup;
+			children = (
+				61747A1811A7F04100421C4F /* bwerror.png */,
+				61747A1911A7F04100421C4F /* error.png */,
+				61747A1A11A7F04100421C4F /* highunread.png */,
+				61747A1B11A7F04100421C4F /* nounread.png */,
+				61747A1C11A7F04100421C4F /* nounreadalt.png */,
+				61747A1D11A7F04100421C4F /* unread.png */,
+			);
+			path = Images;
+			sourceTree = "<group>";
+		};
+		61747A1611A7F02200421C4F /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				61747A2411A7F04A00421C4F /* beep.aiff */,
+			);
+			path = Sounds;
+			sourceTree = "<group>";
+		};
 		C76E1FEA0B05E240001B400B /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
 				C7C90A550AFA790F0080D14F /* MainController.h */,
 				C7C90A560AFA790F0080D14F /* MainController.m */,
 			);
-			name = Controllers;
+			path = Controllers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -272,15 +296,15 @@
 			files = (
 				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
 				C7C90A530AFA78F70080D14F /* MainMenu.nib in Resources */,
-				C7C90A5D0AFA790F0080D14F /* beep.aiff in Resources */,
-				C7C90A5F0AFA790F0080D14F /* highunread.png in Resources */,
-				C7C90A600AFA790F0080D14F /* nounread.png in Resources */,
-				C7C90A610AFA790F0080D14F /* unread.png in Resources */,
 				C7C90A6E0AFA7A020080D14F /* Reader Notifier.icns in Resources */,
-				C730B3EA0AFA9AEA00614F08 /* error.png in Resources */,
-				C74A91BE0C6C5D9E004BF883 /* nounreadalt.png in Resources */,
-				C7B3E20A0DA900B400B29ECA /* bwerror.png in Resources */,
 				9A8BB4730DCA43F8003AD06B /* Localizable.strings in Resources */,
+				61747A1E11A7F04100421C4F /* bwerror.png in Resources */,
+				61747A1F11A7F04100421C4F /* error.png in Resources */,
+				61747A2011A7F04100421C4F /* highunread.png in Resources */,
+				61747A2111A7F04100421C4F /* nounread.png in Resources */,
+				61747A2211A7F04100421C4F /* nounreadalt.png in Resources */,
+				61747A2311A7F04100421C4F /* unread.png in Resources */,
+				61747A2511A7F04A00421C4F /* beep.aiff in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -294,9 +318,9 @@
 				8D11072D0486CEB800E47090 /* main.m in Sources */,
 				C7C90A5E0AFA790F0080D14F /* MainController.m in Sources */,
 				C7F2B64B0B0A5E8300790961 /* Keychain.m in Sources */,
-				495B263B11A427E500EE4BEB /* IPMPendingConnection.m in Sources */,
-				495B263F11A4285A00EE4BEB /* IPMNetworkManager.m in Sources */,
 				495B278011A566A300EE4BEB /* NetParam.m in Sources */,
+				61747A0F11A7EF9100421C4F /* IPMNetworkManager.m in Sources */,
+				61747A1011A7EF9100421C4F /* IPMPendingConnection.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
