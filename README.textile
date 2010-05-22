@@ -1,14 +1,15 @@
-This is a fork of Troels Bay's *Reader Notifier* on Google Code to push active development on the project. Like the original it is released under GPL.
+h3. Contact and About
 
-h3. Download
+Reader Notifier has originally been made by Troels Bay, forked by canbuffi and now actively developed by Mike Godenzi and Claudio Marforio, independent developers living in Europe. Please donate if you enjoy and find the app useful.
 
-Download the current Version 1.12 with **Snow Leopard** support right here:
+h3. Some background
 
-"Reader_Notifier_1.12.zip":http://cloud.github.com/downloads/canbuffi/readernotifier/Reader_Notifier_1.12.zip
+This is a fork of canbuffi's *Reader Notifier* on github ("Canbuffi on github":http://github.com/canbuffi) to push active development on the project. Like the original it is released under GPL.
+
 
 __Here are the original FAQs from Troels Bay's site:__
 
-h1. Reader Notifier
+h2. Reader Notifier
 
 *Reader Notifier* aims to supplement the official Mac Notifier menubar plugins for OS X, in adding support for Google Reader. *Reader Notifier* tells you when you have new unread rss/feed items available, and lets you visit those feeds without ever going to the Google Reader interface.
 
@@ -32,8 +33,4 @@ Reader Notifier is provided as is. It should be fairly easy to understand the ap
 
 h3. Please help if you can
 
-If you are of a creative nature, and want to make new menubar icons (or enhance the existing once) please send me suggestions! Especially the BW image displayed when no unread items exists is a bit rough.
-
-h3. Contact and About
-
-Reader Notifier is made by Troels Bay, an independent developer living in Europe. Please donate if you enjoy and find the app useful. If you want to do business feel free to skip through my resume at linkedin. 
+If you are of a creative nature, and want to make new menubar icons (or enhance the existing once) please send me suggestions! Especially the BW image displayed when no unread items exists is a bit rough. 
