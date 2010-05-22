@@ -6,13 +6,6 @@ h3. Some background
 
 This is a fork of canbuffi's *Reader Notifier* on github (http://github.com/canbuffi) to push active development on the project. Like the original it is released under GPL.
 
-<!-- h3. Download
-
-Download the current Version 1.12 with **Snow Leopard** support right here:
-
-"Reader_Notifier_1.12.zip":http://cloud.github.com/downloads/canbuffi/readernotifier/Reader_Notifier_1.12.zip
--->
-
 __Here are the original FAQs from Troels Bay's site:__
 
 h1. Reader Notifier
