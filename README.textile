@@ -6,16 +6,10 @@ h3. Some background
 
 This is a fork of canbuffi's *Reader Notifier* on github ("Canbuffi on github":http://github.com/canbuffi) to push active development on the project. Like the original it is released under GPL.
 
-<!-- h3. Download
-
-Download the current Version 1.12 with **Snow Leopard** support right here:
-
-"Reader_Notifier_1.12.zip":http://cloud.github.com/downloads/canbuffi/readernotifier/Reader_Notifier_1.12.zip
--->
 
 __Here are the original FAQs from Troels Bay's site:__
 
-h1. Reader Notifier
+h2. Reader Notifier
 
 *Reader Notifier* aims to supplement the official Mac Notifier menubar plugins for OS X, in adding support for Google Reader. *Reader Notifier* tells you when you have new unread rss/feed items available, and lets you visit those feeds without ever going to the Google Reader interface.
 
