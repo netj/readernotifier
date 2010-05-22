@@ -17,6 +17,7 @@
 		61747A2211A7F04100421C4F /* nounreadalt.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1C11A7F04100421C4F /* nounreadalt.png */; };
 		61747A2311A7F04100421C4F /* unread.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1D11A7F04100421C4F /* unread.png */; };
 		61747A2511A7F04A00421C4F /* beep.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 61747A2411A7F04A00421C4F /* beep.aiff */; };
+		61747A2A11A7F0D900421C4F /* Utilities.m in Sources */ = {isa = PBXBuildFile; fileRef = 61747A2911A7F0D900421C4F /* Utilities.m */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
@@ -80,6 +81,8 @@
 		61747A1C11A7F04100421C4F /* nounreadalt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = nounreadalt.png; sourceTree = "<group>"; };
 		61747A1D11A7F04100421C4F /* unread.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = unread.png; sourceTree = "<group>"; };
 		61747A2411A7F04A00421C4F /* beep.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = beep.aiff; sourceTree = "<group>"; };
+		61747A2811A7F0D900421C4F /* Utilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utilities.h; sourceTree = "<group>"; };
+		61747A2911A7F0D900421C4F /* Utilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Utilities.m; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* Reader Notifier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Reader Notifier.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A8BB46F0DCA43F8003AD06B /* Russian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Russian; path = Russian.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -119,6 +122,8 @@
 				C7F2B64A0B0A5E8300790961 /* Keychain.m */,
 				495B277E11A566A300EE4BEB /* NetParam.h */,
 				495B277F11A566A300EE4BEB /* NetParam.m */,
+				61747A2811A7F0D900421C4F /* Utilities.h */,
+				61747A2911A7F0D900421C4F /* Utilities.m */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -321,6 +326,7 @@
 				495B278011A566A300EE4BEB /* NetParam.m in Sources */,
 				61747A0F11A7EF9100421C4F /* IPMNetworkManager.m in Sources */,
 				61747A1011A7EF9100421C4F /* IPMPendingConnection.m in Sources */,
+				61747A2A11A7F0D900421C4F /* Utilities.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

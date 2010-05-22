@@ -8,6 +8,7 @@
 #import "Keychain.h"
 #import "IPMNetworkManager.h"
 #import "NetParam.h"
+#import "Utilities.h"
 
 // 27 with special icons, 29 else
 #define ourStatusItemWithLength 29
@@ -438,14 +439,14 @@
 	int index = [aNumber intValue];
 	
 	NSString * feedstring;
-	feedstring = [self search:@":" andReplace:@"%3A" inString:[feeds objectAtIndex:index]];
-	feedstring = [self search:@"/" andReplace:@"%2F" inString:feedstring];
-	feedstring = [self search:@"=" andReplace:@"-" inString:feedstring];
+	feedstring = [Utilities search:@":" andReplace:@"%3A" inString:[feeds objectAtIndex:index]];
+	feedstring = [Utilities search:@"/" andReplace:@"%2F" inString:feedstring];
+	feedstring = [Utilities search:@"=" andReplace:@"-" inString:feedstring];
 	
 	NSString * idsstring;
-	idsstring = [self search:@"/" andReplace:@"%2F" inString:[ids objectAtIndex:index]];
-	idsstring = [self search:@"," andReplace:@"%2C" inString:idsstring];
-	idsstring = [self search:@":" andReplace:@"%3A" inString:idsstring];
+	idsstring = [Utilities search:@"/" andReplace:@"%2F" inString:[ids objectAtIndex:index]];
+	idsstring = [Utilities search:@"," andReplace:@"%2C" inString:idsstring];
+	idsstring = [Utilities search:@":" andReplace:@"%3A" inString:idsstring];
 	
 	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=scroll", [self getURLPrefix]];
 	NSString * body = [NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F%@%%2Fstate%%2Fcom.google%%2Fstarred&T=%@", 
@@ -496,7 +497,7 @@
 	if (totalUnreadItemsInGRInterface == [results count] || [[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue]) {
 		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/mark-all-as-read?client=scroll", [self getURLPrefix]];
 		NSString * body = [NSString stringWithFormat:@"s=user%%2F%@%%2F%@&T=%@", 
-						   [self grabUserNo], [self search:@"/" andReplace:@"%2F" inString:[self getLabel]], currentToken];
+						   [self grabUserNo], [Utilities search:@"/" andReplace:@"%2F" inString:[self getLabel]], currentToken];
 		[networkManager sendPOSTNetworkRequest:url withBody:body withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
 		[lastIds setArray:ids];
 		[results removeAllObjects];
@@ -611,8 +612,8 @@
 	NSUInteger j;
 	for (j = 0; j < [results count] && j < [[prefs valueForKey:@"maxItems"] intValue]; j++) {
 		if (![[prefs valueForKey:@"minimalFunction"] boolValue]) {
-			NSString * trimmedTitleTag = [[NSString alloc] initWithString:[self trimDownString:[self flattenHTML:[[titles objectAtIndex:j] stringValue]] withMaxLenght:60]];
-			NSString * trimmedSourceTag = [[NSString alloc] initWithString:[self trimDownString:[self flattenHTML:[[sources objectAtIndex:j] stringValue]] withMaxLenght:maxLettersInSource]];
+			NSString * trimmedTitleTag = [[NSString alloc] initWithString:[Utilities trimDownString:[Utilities flattenHTML:[[titles objectAtIndex:j] stringValue]] withMaxLenght:60]];
+			NSString * trimmedSourceTag = [[NSString alloc] initWithString:[Utilities trimDownString:[Utilities flattenHTML:[[sources objectAtIndex:j] stringValue]] withMaxLenght:maxLettersInSource]];
 			NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
 			[item setAttributedTitle:[self makeAttributedMenuStringWithBigText:trimmedSourceTag andSmallText:trimmedTitleTag]];
 			if (![[prefs valueForKey:@"dontShowTooltips"] boolValue])
@@ -792,11 +793,11 @@
 	for (m = 0; m < [titles count]; m++) {
 		NSArray * tempArray2 = [atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/summary/text()", m + 1] error:NULL];
 		if ([tempArray2 count] > 0)
-			[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [self flattenHTML:[self trimDownString:[[tempArray2 objectAtIndex:0] stringValue] withMaxLenght:maxLettersInSummary]]] atIndex:m];
+			[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [Utilities flattenHTML:[Utilities trimDownString:[[tempArray2 objectAtIndex:0] stringValue] withMaxLenght:maxLettersInSummary]]] atIndex:m];
 		else {
 			NSArray * tempArray3 = [atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/content/text()", m + 1] error:NULL];
 			if([tempArray3 count] > 0)
-				[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [self flattenHTML:[self trimDownString:[[tempArray3 objectAtIndex:0] stringValue] withMaxLenght:maxLettersInSummary]]] atIndex:m];
+				[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [Utilities flattenHTML:[Utilities trimDownString:[[tempArray3 objectAtIndex:0] stringValue] withMaxLenght:maxLettersInSummary]]] atIndex:m];
 			else
 				[summaries insertObject:@"" atIndex:m];
 		}
@@ -1136,10 +1137,10 @@
 }
 
 - (NSAttributedString *)makeAttributedMenuStringWithBigText:(NSString *)bigtext andSmallText:(NSString *)smalltext {
-	bigtext = [self flattenHTML:bigtext];
+	bigtext = [Utilities flattenHTML:bigtext];
 	NSMutableAttributedString * newString = [[[NSMutableAttributedString alloc] initWithString:bigtext attributes:normalAttrsDictionary] autorelease];
 	if ([smalltext length] > 0) {
-		smalltext = [self flattenHTML:smalltext];
+		smalltext = [Utilities flattenHTML:smalltext];
 		NSAttributedString * smallString = [[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@" - %@", smalltext] 
 																		   attributes:smallAttrsDictionary];
 		[newString appendAttributedString:smallString];
@@ -1162,8 +1163,8 @@
 		// we don't display the possible extra feed that we grab
 		for(i = 0; i < [newItems count] && i < [[prefs valueForKey:@"maxItems"] intValue]; i++){
 			int notifyindex = [results indexOfObjectIdenticalTo:[newItems objectAtIndex:i]];
-			[GrowlApplicationBridge notifyWithTitle:[NSString stringWithFormat:@"%@",[self flattenHTML:[[sources objectAtIndex:notifyindex] stringValue]]] 
-										description:[NSString stringWithFormat:@"%@",[self flattenHTML:[[titles objectAtIndex:notifyindex] stringValue]]]
+			[GrowlApplicationBridge notifyWithTitle:[NSString stringWithFormat:@"%@",[Utilities flattenHTML:[[sources objectAtIndex:notifyindex] stringValue]]] 
+										description:[NSString stringWithFormat:@"%@",[Utilities flattenHTML:[[titles objectAtIndex:notifyindex] stringValue]]]
 								   notificationName:NSLocalizedString(@"New Unread Items",nil)
 										   iconData:nil
 										   priority:0
@@ -1233,43 +1234,6 @@
 	DLog(@"sources count: %d", [sources count]);
 	DLog(@"summaries count: %d", [summaries count]);
 	DLog(@"torrentcastlinks count: %d", [torrentcastlinks count]);
-}
-
-#pragma mark -
-
-- (NSString *)flattenHTML:(NSString *)stringToFlatten {
-	stringToFlatten = [self search:@"&quot;" andReplace:@"\"" inString:stringToFlatten];
-	stringToFlatten = [self search:@"&amp;" andReplace:@"&" inString:stringToFlatten];
-	stringToFlatten = [self search:@"&#39;" andReplace:@"'" inString:stringToFlatten];
-	return stringToFlatten;
-}
-
-- (NSString *)search:(NSString *)searchString andReplace:(NSString *)replaceString inString:(NSString *)inString {
-	NSMutableString * mstr;
-	NSRange substr;
-	mstr = [NSMutableString stringWithString:inString];
-	substr = [mstr rangeOfString:searchString];
-	while (substr.location != NSNotFound) {
-		[mstr replaceCharactersInRange:substr withString:replaceString];
-        substr = [mstr rangeOfString:searchString];
-    }
-	return mstr;
-}
-
-- (NSMutableArray *)reverseArray:(NSMutableArray *)array {
-	NSUInteger i = 0;
-	for (i = 0; i < (floor([array count]/2.0)); i++)
-		[array exchangeObjectAtIndex:i withObjectAtIndex:([array count]-(i+1))];
-	return array;
-}
-
-- (NSString *)trimDownString:(NSString *)stringToTrim withMaxLenght:(NSInteger)maxLength {
-	int initialLengthOfString = [stringToTrim length];
-	stringToTrim = [stringToTrim substringToIndex:MIN(maxLength,[stringToTrim length])];
-	// if we made a trim down, we add a couple of dots
-	if (initialLengthOfString > maxLength)
-		stringToTrim = [stringToTrim stringByAppendingString:@"..."];
-	return stringToTrim;
 }
 
 @end

@@ -70,11 +70,9 @@
 - (void)removeNumberOfItemsFromMenubar:(int) number;
 - (NSAttributedString *)makeAttributedStatusItemString:(NSString *)text;
 - (NSAttributedString *)makeAttributedMenuStringWithBigText:(NSString *)bigtext andSmallText:(NSString *)smalltext;
-- (NSString *)flattenHTML:(NSString *)stringToFlatten;
 - (void)addFeed:(NSString *)url;
 - (void)displayAlert:(NSString *)headerText:(NSString *)bodyText;
 - (void)displayMessage:(NSString *)message;
-- (NSString *)search:(NSString *)searchString andReplace:(NSString *)replaceString inString:(NSString *)inString;
 - (NSString *)grabUserNo;
 - (NSString *)loginToGoogle;
 - (void)removeAllItemsFromMenubar;
@@ -83,7 +81,6 @@
 - (void)timer:(NSTimer *)timer;
 - (void)getUnreadCount;
 - (void)retrieveGoogleFeed;
-- (NSMutableArray *)reverseArray:(NSMutableArray *)array;
 - (void)updateMenu;
 - (void)setTimeDelay:(int)x;
 - (NSString *)getLabel;
@@ -93,7 +90,6 @@
 - (NSString *)getUserPasswordFromKeychain;
 - (void)growlNotificationWasClicked:(id)clickContext;
 - (NSDictionary *)registrationDictionaryForGrowl;
-- (NSString *)trimDownString:(NSString *)stringToTrim withMaxLenght:(NSInteger)maxLength;
 - (void)setupEventHandlers;
 - (void)handleOpenLocationAppleEvent:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)reply;
 - (void)createLastCheckTimer;
