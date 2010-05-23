@@ -62,8 +62,8 @@
 	BOOL currentlyFetchingAndUpdating;
 	BOOL moreUnreadExistInGRInterface;
 	
-	int totalUnreadItemsInGRInterface;
-	int lastCheckMinute;
+	NSInteger totalUnreadCount;
+	NSInteger lastCheckMinute;
 }
 
 - (void)downloadFile:(NSString *)filename atUrl:(NSString *)url;

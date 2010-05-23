@@ -90,6 +90,17 @@
 	[unreadItemsImage release];
 	[errorImage release];
 	[highlightedImage release];
+	[user release];
+	[titles release];
+	[links release];
+	[results release];
+	[lastIds release];
+	[feeds release];
+	[ids release];
+	[sources release];
+	[newItems release];
+	[summaries release];
+	[torrentcastlinks release];
     [super dealloc];
 }
 
@@ -192,8 +203,9 @@
 			// then we make sure that it's not already running
 			if (!currentlyFetchingAndUpdating) {
 				// threading
-				[mainTimer invalidate];	
 				[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] integerValue]];
+				[self createLastCheckTimer];
+				[lastCheckTimer fire];
 				[self retrieveGoogleFeed];
 			}
 		}
@@ -233,15 +245,15 @@
 		[statusItem setMenu:tempMenuSec];
 		if ([[prefs valueForKey:@"showCount"] boolValue])
 			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d",[results count]-1]]];
-		int index = [ids indexOfObjectIdenticalTo:[sender title]];
+		NSUInteger index = [ids indexOfObjectIdenticalTo:[sender title]];
 		DLog(@"Index is %d", index);
 		DLog(@"NUMBER OF ITEMS IS, %d", [GRMenu numberOfItems]);
 		if ([GRMenu numberOfItems] == 9) {
-			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
-			[GRMenu removeItemAtIndex:index+indexOfPreviewFields]; // the shaddow (optional-click
-			[GRMenu removeItemAtIndex:index+indexOfPreviewFields]; // the space-line
+			[GRMenu removeItemAtIndex:index + indexOfPreviewFields];
+			[GRMenu removeItemAtIndex:index + indexOfPreviewFields]; // the shaddow (optional-click
+			[GRMenu removeItemAtIndex:index + indexOfPreviewFields]; // the space-line
 		} else
-			[GRMenu removeItemAtIndex:index+indexOfPreviewFields];
+			[GRMenu removeItemAtIndex:index + indexOfPreviewFields];
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:index]]];
 		[self markOneAsReadDetached:[NSNumber numberWithInt:index]];
 	} else
@@ -442,6 +454,7 @@
 						  [self getURLPrefix], feedstring, [ids objectAtIndex:index], currentToken];
 		[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
 		[feedstring release];
+		totalUnreadCount--;
 		// at the end of this we will also remove the tempMenuSec and insert GRMenu
 		[self removeOneItemFromMenu:index];
 	} else
@@ -467,7 +480,7 @@
 
 - (void)markAllAsReadDetached {
 	[statusItem setMenu:tempMenuSec];
-	if (totalUnreadItemsInGRInterface == [results count] || [[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue]) {
+	if (totalUnreadCount == [results count] || [[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue]) {
 		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/mark-all-as-read?client=scroll", [self getURLPrefix]];
 		NSString * replacedLabel = [[self getLabel] stringByReplacingOccurrencesOfString:@"/" withString:@"%2F"];
 		NSString * body = [NSString stringWithFormat:@"s=user%%2F%@%%2F%@&T=%@", 
@@ -482,7 +495,7 @@
 		[sources removeAllObjects];
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
 	} else {
-		if (totalUnreadItemsInGRInterface != -1) {
+		if (totalUnreadCount != -1) {
 			[self displayAlert:NSLocalizedString(@"Warning",nil) :NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.",nil)];
 			[self retrieveGoogleFeed];
 			DLog(@"Error marking all as read");
@@ -510,9 +523,9 @@
 
 //updates the icon if necessary, updates the unread item
 - (void)updateMenu {
-	[lastCheckTimer invalidate]; // TODO: not sure if this 3 lines are really needed, need to check in to it
-	[self createLastCheckTimer];
-	[lastCheckTimer fire];
+	//[lastCheckTimer invalidate]; // TODO: not sure if this 3 lines are really needed, need to check in to it
+	//[self createLastCheckTimer];
+	//[lastCheckTimer fire];
 	DLog(@"updateMenu begin");
 	currentlyFetchingAndUpdating = YES;
 	NSInteger n = [GRMenu numberOfItems];
@@ -644,10 +657,10 @@
 	if ([[prefs valueForKey:@"showCount"] boolValue]) {
 		if (moreUnreadExistInGRInterface) {
 			[statusItem setLength:NSVariableStatusItemLength];
-			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d",totalUnreadItemsInGRInterface]]];
+			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d", totalUnreadCount]]];
 		} else if ([results count] > 0) {
 			[statusItem setLength:NSVariableStatusItemLength];			
-			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d",[results count]]]];
+			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d", [results count]]]];
 		} else {
 			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:@""]];
 			[statusItem setLength:ourStatusItemWithLength];
@@ -655,11 +668,11 @@
 	} else
 		[statusItem setLength:ourStatusItemWithLength];
 	if (moreUnreadExistInGRInterface) {
-		[statusItem setToolTip:[NSString stringWithFormat:NSLocalizedString(@"Unread Items: %d",nil),totalUnreadItemsInGRInterface]];
-		[self displayTopMessage:[NSString stringWithFormat:NSLocalizedString(@"%d Unread",nil),totalUnreadItemsInGRInterface]];
+		[statusItem setToolTip:[NSString stringWithFormat:NSLocalizedString(@"Unread Items: %d",nil), totalUnreadCount]];
+		[self displayTopMessage:[NSString stringWithFormat:NSLocalizedString(@"%d Unread",nil), totalUnreadCount]];
 	} else if ([results count] > 0) {
-		[statusItem setToolTip:[NSString stringWithFormat:NSLocalizedString(@"Unread Items: %d",nil),[results count]]];
-		[self displayTopMessage:[NSString stringWithFormat:NSLocalizedString(@"%d Unread",nil),[results count]]];
+		[statusItem setToolTip:[NSString stringWithFormat:NSLocalizedString(@"Unread Items: %d",nil), [results count]]];
+		[self displayTopMessage:[NSString stringWithFormat:NSLocalizedString(@"%d Unread",nil), [results count]]];
 	} else {
 		[statusItem setToolTip:NSLocalizedString(@"No Unread Items",nil)];
 		[self displayTopMessage:@""];
@@ -715,7 +728,6 @@
 		[self displayMessage:@"no Internet connection"];
 		[self errorImageOn];
 		[statusItem setMenu:GRMenu];
-		[lastCheckTimer invalidate];
 		[self createLastCheckTimer];
 		[lastCheckTimer fire];		
 	} else {
@@ -848,9 +860,9 @@
 	NSString * dString;
 	for (k = 0; k < [tempArray5 count]; k++) {
 		dString = [[tempArray5 objectAtIndex:k] stringValue];
-		t += [dString intValue];
+		t += [dString integerValue];
 	}
-	totalUnreadItemsInGRInterface = t;
+	totalUnreadCount = t;
 	[atomdoc2 release];
 	DLog(@"The total count of unread items is now %d", t);
 	if (!currentlyFetchingAndUpdating)
@@ -858,7 +870,7 @@
 }
 
 - (void)processFailUnreadCount:(NSError *)error {
-	totalUnreadItemsInGRInterface = -1;
+	totalUnreadCount = -1;
 	[self errorImageOn]; 
 	currentlyFetchingAndUpdating = NO;
 	[lastCheckTimer invalidate];
@@ -878,13 +890,7 @@
 }
 
 #pragma mark -
-#pragma mark Others
-
-- (void)awakenFromSleep {
-	DLog(@"AWAKEN FROM SLEEP");
-	[prefs setValue:@"" forKey:@"storedSID"];
-	[self loginToGoogle];
-}
+#pragma mark Timers
 
 - (void)createLastCheckTimer {
 	lastCheckMinute = 0;
@@ -911,29 +917,33 @@
 
 - (void)lastTimeCheckedTimer:(NSTimer *)timer {
 	[self getTokenFromGoogle];
-	if (lastCheckMinute > [[prefs valueForKey:@"timeDelay"] intValue]) {
+	if (lastCheckMinute > [[prefs valueForKey:@"timeDelay"] integerValue]) {
 		DLog(@"lastTimeChecked is more than it should be, so we run update");
 		if (!currentlyFetchingAndUpdating)
 			[self checkNow:nil];
 	} else {
 		DLog(@"lastTimeCheckedTimer run %d", lastCheckMinute);
-		if (lastCheckMinute == 0) {
+		if (lastCheckMinute == 0)
 			[self displayLastTimeMessage:[NSString stringWithString:NSLocalizedString(@"Checked less than 1 min ago",nil)]]; /* ok */
-		} else if (lastCheckMinute == 1) {
+		else if (lastCheckMinute == 1)
 			[self displayLastTimeMessage:[NSString stringWithString:NSLocalizedString(@"Checked 1 min ago",nil)]]; /* ok */
-		} else if (lastCheckMinute < 60) {
+		else if (lastCheckMinute < 60)
 			[self displayLastTimeMessage:[NSString stringWithFormat:NSLocalizedString(@"Checked %d min ago",nil), lastCheckMinute]];
-		} else if (59 < lastCheckMinute < 120) {
-			[self displayLastTimeMessage:[NSString stringWithString:NSLocalizedString(@"Checked 1 hour ago",nil)]]; /* ok */
-		} else if (119 < lastCheckMinute < 180) {
-			[self displayLastTimeMessage:[NSString stringWithString:NSLocalizedString(@"Checked 2 hours ago",nil)]]; /* ok */
-		} else if (179 < lastCheckMinute < 240) {
-			[self displayLastTimeMessage:[NSString stringWithString:NSLocalizedString(@"Checked 3 hours ago",nil)]]; /* ok */
-		} else if (239 < lastCheckMinute) {
-			[self displayLastTimeMessage:[NSString stringWithString:NSLocalizedString(@"Checked more than 4 hours ago",nil)]]; /* ok */
+		else {
+			NSUInteger hours = lastCheckMinute / 60;
+			[self displayLastTimeMessage:[NSString stringWithFormat:NSLocalizedString(@"Checked %d hour(s) ago",nil), hours]]; /* ok */
 		}
 		lastCheckMinute++;
 	}
+}
+
+#pragma mark -
+#pragma mark Others
+
+- (void)awakenFromSleep {
+	DLog(@"AWAKEN FROM SLEEP");
+	[prefs setValue:@"" forKey:@"storedSID"];
+	[self loginToGoogle];
 }
 
 - (void)displayAlert:(NSString *) headerText:(NSString *) bodyText {
@@ -1123,7 +1133,7 @@
 }
 
 - (void)announce {
-	if ([newItems count] > [[prefs stringForKey:@"maxNotifications"] intValue]) {
+	if ([newItems count] > [[prefs stringForKey:@"maxNotifications"] integerValue]) {
 		[GrowlApplicationBridge notifyWithTitle:NSLocalizedString(@"New Unread Items",nil)
 									description:NSLocalizedString(@"Google Reader Notifier has found a number of new items.",nil)
 							   notificationName:NSLocalizedString(@"New Unread Items",nil)
