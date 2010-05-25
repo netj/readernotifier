@@ -29,7 +29,7 @@
 - (void)processLoginToGoogle:(NSString *)result;
 - (void)processGoogleFeed:(NSData *)result;
 - (void)processFailGoogleFeed:(NSError *)error;
-- (void)processUnreadCount:(NSData *)result;
+- (void)processUnreadCount:(NSData *)result withDeferred:(NetParam *)dc;
 - (void)processFailUnreadCount:(NSError *)error;
 - (void)processDownloadFile:(NSString *)filename withData:(NSData *)result;
 - (void)processTokenFromGoogle:(NSString *)result;
@@ -190,11 +190,13 @@
 - (IBAction)checkNow:(id)sender {	
 	// first we check if the user has put in a password and username beforehand
 	if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
-		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
+		[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
+							 andBody:NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
 		[self errorImageOn];
 		storedSID = @"";
 	} else if ([[prefs valueForKey:@"Username"] isEqualToString:@""] || ![prefs valueForKey:@"Username"]) {
-		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
+		[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
+							 andBody:NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
 		[self errorImageOn];
 		storedSID = @"";
 	} else {
@@ -213,26 +215,26 @@
 }
 
 - (IBAction)launchSite:(id)sender {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/accounts/SetSID?ssdc=1&sidt=%@&continue=http%%3A%%2F%%2Fgoogle.com%%2Freader%%2Fview%%2F", [self getGoogleSIDClean]]]];
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/accounts/SetSID?ssdc=1&sidt=%@&continue=http%%3A%%2F%%2Fgoogle.com%%2Freader%%2Fview%%2F", storedSID]]];
 }
 
 - (IBAction)openAllItems:(id)sender {
 	currentlyFetchingAndUpdating = YES;
 	[statusItem setMenu:tempMenuSec];
-	
-	int j = 0;
-	for (j = 0; j < [results count]; j++) {
+	NSUInteger j = 0;
+	for (j = 0; j < [results count]; j++)
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:[[results objectAtIndex:j] intValue]]]];	
-	}
 	[self markResultsAsReadDetached];
 }
 
 - (IBAction)markAllAsRead:(id)sender {
 	DLog(@"markAllAsRead begin");
-	[self getUnreadCount];
-	currentlyFetchingAndUpdating = YES;
-	[statusItem setMenu:tempMenuSec];
-	[self markAllAsReadDetached];
+	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(markAllAsReadDetached) andFail:0 onTarget:self];
+	[self getUnreadCountWithDeferredCall:np];
+	[np release];
+	//currentlyFetchingAndUpdating = YES;
+	//[statusItem setMenu:tempMenuSec];
+	//[self markAllAsReadDetached];
 	DLog(@"markAllAsRead end");
 }
 
@@ -307,12 +309,12 @@
 	else
 		[Keychain addKeychainItem:password];
 	if (![[self loginToGoogle] isEqualToString:@""]) {
-		[self displayAlert:NSLocalizedString(@"Success",nil):NSLocalizedString(@"You are now connected to Google",nil)];
+		[self displayAlertWithHeader:NSLocalizedString(@"Success",nil) andBody:NSLocalizedString(@"You are now connected to Google",nil)];
 		[mainTimer invalidate];
 		[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] integerValue]];
 		[mainTimer fire];
 	} else
-		[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"Unable to connect to Google with user details",nil)];
+		[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) andBody:NSLocalizedString(@"Unable to connect to Google with user details",nil)];
 }
 
 - (IBAction)selectTorrentCastFolder:(id)sender {
@@ -362,13 +364,18 @@
 #pragma mark -
 #pragma mark Netowrk methods
 
-- (void)getUnreadCount {
-	DLog(@"Unread count method initiated");
+- (void)getUnreadCountWithDeferredCall:(NetParam *)dc {
+	DLog(@"Unread count method initiated with dc:%@", [dc description]);
 	// since .99 this has provided a memory error (case of Moore).
 	// we've tried to fix it with releasing atomdoc2 and temparray5 (and not releasing dstring)
 	// http://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=json&ck=1165697710220&client=scroll
-	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=xml&client=scroll", [self getURLPrefix]];
-	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processUnreadCount:) andFail:@selector(processFailUnreadCount:)];
+	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=xml&client=scroll", 
+					  [self getURLPrefix]];
+	NetParam * np;
+	if (dc)
+		np = [[NetParam alloc] initWithSuccess:@selector(processUnreadCount:withDeferred:) fail:@selector(processFailUnreadCount:) andSecondParam:dc onTarget:self];
+	else
+		np = [[NetParam alloc] initWithSuccess:@selector(processUnreadCount:withDeferred:) andFail:@selector(processFailUnreadCount:) onTarget:self];
 	[networkManager retrieveDataAtUrl:url withDelegate:self andParam:np];
 	[np release];
 }
@@ -394,13 +401,13 @@
 	/* new */
 	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/atom/user/-/%@?r=d&xt=user/-/state/com.google/read&n=%d&output=json",
 					  [self getURLPrefix], [self getLabel], [[prefs valueForKey:@"maxItems"] intValue] + 1];
-	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processGoogleFeed:) andFail:@selector(processFailGoogleFeed:)];
+	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processGoogleFeed:) andFail:@selector(processFailGoogleFeed:) onTarget:self];
 	[networkManager retrieveDataAtUrl:url withDelegate:self andParam:np];
 	[np release];
 }
 
 - (void)downloadFile:(NSString *)filename atUrl:(NSString *)url {
-	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processDownloadFile:withData:) fail:0 andSecondParam:filename];
+	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processDownloadFile:withData:) fail:0 andSecondParam:filename onTarget:self];
 	[networkManager retrieveDataAtUrl:url withDelegate:self andParam:np];
 	[np release];
 }
@@ -411,7 +418,7 @@
 		NSString * p1 = [self usernameForAuthenticationChallengeWithParam:nil];
 		NSString * p2 = [self passwordForAuthenticationChallengeWithParam:nil];
 		NSString * params = [NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d", p1, p2, versionBuildNumber];
-		NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processLoginToGoogle:) andFail:0];
+		NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processLoginToGoogle:) andFail:0 onTarget:self];
 		[networkManager sendPOSTNetworkRequest:@"https://www.google.com/accounts/ClientLogin" 
 									  withBody:params 
 							  withResponseType:NSSTRING_NRT 
@@ -424,7 +431,7 @@
 
 - (void)getTokenFromGoogle {
 	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/token", [self getURLPrefix]];
-	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processTokenFromGoogle:) andFail:0];
+	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processTokenFromGoogle:) andFail:0 onTarget:self];
 	[networkManager retrieveStringAtUrl:url withDelegate:self andParam:np];
 }
 
@@ -479,6 +486,7 @@
 }
 
 - (void)markAllAsReadDetached {
+	currentlyFetchingAndUpdating = YES;
 	[statusItem setMenu:tempMenuSec];
 	if (totalUnreadCount == [results count] || [[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue]) {
 		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/mark-all-as-read?client=scroll", [self getURLPrefix]];
@@ -493,10 +501,12 @@
 		[links removeAllObjects];
 		[titles removeAllObjects];
 		[sources removeAllObjects];
+		totalUnreadCount = 0;
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
 	} else {
 		if (totalUnreadCount != -1) {
-			[self displayAlert:NSLocalizedString(@"Warning",nil) :NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.",nil)];
+			[self displayAlertWithHeader:NSLocalizedString(@"Warning",nil) 
+								 andBody:NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.",nil)];
 			[self retrieveGoogleFeed];
 			DLog(@"Error marking all as read");
 		}
@@ -563,7 +573,8 @@
 					[summaries removeObjectAtIndex:i];
 					[torrentcastlinks removeObjectAtIndex:i];				
 				} else {
-					[self displayAlert:NSLocalizedString(@"TorrentCast Error",nil):NSLocalizedString(@"Reader Notifier has found a new TorrentCast. However we are unable to download it because the folder you've specified does not exists. Please choose a new folder in the preferences. In addition, TorrentCasting has been disabled.",nil)];
+					[self displayAlertWithHeader:NSLocalizedString(@"TorrentCast Error",nil) 
+										 andBody:NSLocalizedString(@"Reader Notifier has found a new TorrentCast. However we are unable to download it because the folder you've specified does not exists. Please choose a new folder in the preferences. In addition, TorrentCasting has been disabled.",nil)];
 					[prefs setValue:NO forKey:@"EnableTorrentCastMode"];
 				}
 			}
@@ -690,25 +701,21 @@
 #pragma mark IPMNetworkManagerDelegate methods
 
 - (void)networkManagerDidReceiveNSStringResponse:(NSString *)response withParam:(id<NSObject>)param {
+	DLog(@"RECEIVED NSSTRING");
 	NetParam * nParam = (NetParam *)param;
-	if (nParam.secondParam)
-		[self performSelector:nParam.successMethod withObject:response withObject:nParam.secondParam];
-	else
-		[self performSelector:nParam.successMethod withObject:response];
+	[nParam invokeSuccessWithFirstParam:response];
 }
 
 - (void)networkManagerDidReceiveNSDataResponse:(NSData *)response withParam:(id<NSObject>)param {
+	DLog(@"RECEIVED NSDATA");
 	NetParam * nParam = (NetParam *)param;
-	if (nParam.secondParam)
-		[self performSelector:nParam.successMethod withObject:response withObject:nParam.secondParam];
-	else
-		[self performSelector:nParam.successMethod withObject:response];
+	[nParam invokeSuccessWithFirstParam:response];
 }
 
 - (void)networkManagerDidNotReceiveResponse:(NSError *)error withParam:(id<NSObject>)param {
 	DLog(@"NETWORK ERROR");
 	NetParam * nParam = (NetParam *)param;
-	[self performSelector:nParam.failMethod withObject:error];
+	[nParam invokeFailWithError:error];
 }
 
 - (NSString *)usernameForAuthenticationChallengeWithParam:(id<NSObject>)param {
@@ -743,13 +750,16 @@
 			[lastCheckTimer fire];
 		} else {
 			if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
-				[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
+				[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
+									 andBody:NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
 				[self displayMessage:@"please enter login details"];
 			} else if ([[prefs valueForKey:@"Username"] isEqualToString:@""] || ![prefs valueForKey:@"Username"]) {
-				[self displayAlert:NSLocalizedString(@"Error",nil):NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
+				[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
+									 andBody:NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
 				[self displayMessage:@"please enter login details"];
 			} else {
-				[self displayAlert:NSLocalizedString(@"Authentication error",nil):[NSString stringWithFormat:@"Reader Notifier could not handshake with Google. You probably have entered a wrong user or pass. The error supplied by Google servers was: %@", result]];
+				[self displayAlertWithHeader:NSLocalizedString(@"Authentication error",nil) 
+									 andBody:[NSString stringWithFormat:@"Reader Notifier could not handshake with Google. You probably have entered a wrong user or pass. The error supplied by Google servers was: %@", result]];
 				[self displayMessage:@"wrong user or pass"];				
 			}
 			storedSID = @"";
@@ -829,7 +839,7 @@
 				[torrentcastlinks removeLastObject];
 			}
 			DLog(@"retrieveGoogleFeed 7");
-			[self getUnreadCount];			
+			[self getUnreadCountWithDeferredCall:nil];			
 		} else
 			moreUnreadExistInGRInterface = NO;
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
@@ -846,7 +856,7 @@
 	[statusItem setMenu:GRMenu];
 }
 
-- (void)processUnreadCount:(NSData *)result {
+- (void)processUnreadCount:(NSData *)result withDeferred:(NetParam *)dc {
 	NSXMLDocument * atomdoc2 = [[NSXMLDocument alloc] initWithData:result options:0 error:&xmlError];
 	NSString * xQuery;
 	if ([[prefs valueForKey:@"Label"] isEqualToString:@""]) // if the user is on labels, use that to check instead!
@@ -865,8 +875,8 @@
 	totalUnreadCount = t;
 	[atomdoc2 release];
 	DLog(@"The total count of unread items is now %d", t);
-	if (!currentlyFetchingAndUpdating)
-		[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
+	if (dc)
+		[dc invokeSuccessWithFirstParam:nil];
 }
 
 - (void)processFailUnreadCount:(NSError *)error {
@@ -946,7 +956,7 @@
 	[self loginToGoogle];
 }
 
-- (void)displayAlert:(NSString *) headerText:(NSString *) bodyText {
+- (void)displayAlertWithHeader:(NSString *)headerText andBody:(NSString *)bodyText {
 	[NSApp activateIgnoringOtherApps:YES];		
 	NSAlert * theAlert = [NSAlert alertWithMessageText:headerText
 										 defaultButton:NSLocalizedString(@"Thanks",nil)
@@ -1007,39 +1017,16 @@
 
 - (NSString *)grabUserNo {
 	NSString * storedUserNo;
-	NSScanner * theScanner;
-	theScanner = [NSScanner scannerWithString:[[user objectAtIndex:0] stringValue]];
-	
-	if ([theScanner scanString:@"tag:google.com,2005:reader/user/" intoString:NULL] &&
-		[theScanner scanUpToString:@"/" intoString:&storedUserNo]) {
-		storedUserNo = [NSString stringWithString:storedUserNo];
-	} else {
+	NSScanner * theScanner = [NSScanner scannerWithString:[[user objectAtIndex:0] stringValue]];
+	if (![theScanner scanString:@"tag:google.com,2005:reader/user/" intoString:NULL] 
+		|| ![theScanner scanUpToString:@"/" intoString:&storedUserNo]) {
 		storedUserNo = @"";
 		DLog(@"Something wrong with the userNo retrieval");
 		[self displayMessage:@"no user on server"];
-		[self displayAlert:NSLocalizedString(@"No user",nil):NSLocalizedString(@"We cannot find your user, which is pretty strange. Report this if you are sure to be connected to the internet.",nil)];
+		[self displayAlertWithHeader:NSLocalizedString(@"No user", nil) 
+							 andBody:NSLocalizedString(@"We cannot find your user, which is pretty strange. Report this if you are sure to be connected to the internet.",nil)];
 	}
 	return storedUserNo;
-}
-
-- (NSString *)getGoogleSIDClean {
-	// the problem with loginToGoogle is that you get SID=34935785; Ð we need it without the SID= and ; at the end.
-	
-	NSString * stringReply;
-	stringReply = [self loginToGoogle];
-	
-	if (![stringReply isEqualToString:@""]) {			
-		NSScanner * theScanner;
-		theScanner = [NSScanner scannerWithString:[NSString stringWithString:stringReply]];
-		if ([theScanner scanString:@"SID=" intoString:NULL] &&
-			[theScanner scanUpToString:@"\nLSID=" intoString:&storedSID]) {
-			return [NSString stringWithFormat:@"%@", storedSID];
-		} else {
-			return [NSString stringWithString:@""];
-		}
-	} else {
-		return [NSString stringWithString:@""];
-	}
 }
 
 - (void)checkNowWithDelayDetached:(NSNumber *)delay {
@@ -1189,7 +1176,7 @@
 				if (linkPath)
 					[self addFeed:linkPath];
 				else
-					[self displayAlert:@"Error" :@"The feed address seems to be malformed"];
+					[self displayAlertWithHeader:@"Error" andBody:@"The feed address seems to be malformed"];
 			}
 		}
 	}

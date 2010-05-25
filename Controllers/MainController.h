@@ -13,6 +13,7 @@
 #import "IPMNetworkManagerDelegate.h"
 
 @class IPMNetworkManager;
+@class NetParam;
 
 @interface MainController : NSObject<GrowlApplicationBridgeDelegate, IPMNetworkManagerDelegate> {
     IBOutlet NSSecureTextField * passwordField;
@@ -71,7 +72,7 @@
 - (NSAttributedString *)makeAttributedStatusItemString:(NSString *)text;
 - (NSAttributedString *)makeAttributedMenuStringWithBigText:(NSString *)bigtext andSmallText:(NSString *)smalltext;
 - (void)addFeed:(NSString *)url;
-- (void)displayAlert:(NSString *)headerText:(NSString *)bodyText;
+- (void)displayAlertWithHeader:(NSString *)headerText andBody:(NSString *)bodyText;
 - (void)displayMessage:(NSString *)message;
 - (NSString *)grabUserNo;
 - (NSString *)loginToGoogle;
@@ -79,7 +80,7 @@
 - (void)getTokenFromGoogle;
 - (void)removeOneItemFromMenu:(NSInteger)index;
 - (void)timer:(NSTimer *)timer;
-- (void)getUnreadCount;
+- (void)getUnreadCountWithDeferredCall:(NetParam *)dc;
 - (void)retrieveGoogleFeed;
 - (void)updateMenu;
 - (void)setTimeDelay:(NSInteger)x;
@@ -98,7 +99,6 @@
 - (void)lastTimeCheckedTimer:(NSTimer *)timer;
 - (void)selectTorrentCastFolderEnded:(NSOpenPanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 - (void)checkNowWithDelayDetached:(NSNumber *)delay;
-- (NSString *)getGoogleSIDClean;
 - (void)markResultsAsReadDetached;
 - (void)markOneAsReadDetached:(NSNumber *)aNumber;
 - (void)markAllAsReadDetached;
