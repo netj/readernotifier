@@ -235,7 +235,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (IBAction)openAllItems:(id)sender {
-	currentlyFetchingAndUpdating = YES;
 	NSUInteger j = 0;
 	for (j = 0; j < [results count]; j++)
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:[[results objectAtIndex:j] integerValue]]]];	
@@ -255,7 +254,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored 
 	// (we make use of the id - and hopefully it will be an absolute). 
 	if ([ids containsObject:[sender title]]) {
-		currentlyFetchingAndUpdating = YES;
 		if ([[prefs valueForKey:@"showCount"] boolValue])
 			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d",[results count]-1]]];
 		NSUInteger index = [ids indexOfObjectIdenticalTo:[sender title]];
@@ -267,7 +265,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (IBAction)doOptionalActionFromMenu:(id)sender {
-	currentlyFetchingAndUpdating = YES;
 	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored 
 	// (we make use of the id - and hopefully it will be an absolute). 
 	if ([ids containsObject:[sender title]]) {
@@ -277,10 +274,8 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 			[self markOneAsStarredDetached:indexNumber];
 		else
 			[self markOneAsReadDetached:indexNumber];
-	} else {
-		currentlyFetchingAndUpdating = NO;
+	} else
 		DLog(@"Item has already gone away, so we cannot refetch it");
-	}
 }
 
 - (IBAction)launchErrorHelp:(id)sender {
@@ -462,7 +457,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[self removeOneFeedFromMenu:index];
 	} else
 		DLog(@"markOneAsReadDetatched - there was not enough items in feeds or ids array");
-	currentlyFetchingAndUpdating = NO;
 	DLog(@"markOneAsReadDetatched end");
 }
 
@@ -477,12 +471,10 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
 		[feedstring release];
 	}
-	currentlyFetchingAndUpdating = NO;
 	[self checkNow:nil];
 }
 
 - (void)markAllAsReadDetached {
-	currentlyFetchingAndUpdating = YES;
 	if (totalUnreadCount == [results count] || [[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue]) {
 		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/mark-all-as-read?client=scroll", [self getURLPrefix]];
 		NSString * replacedLabel = [[self getLabel] stringByReplacingOccurrencesOfString:@"/" withString:@"%2F"];
@@ -498,13 +490,11 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[sources removeAllObjects];
 		totalUnreadCount = 0;
 		[self updateMenu];
-	} else {
-		if (totalUnreadCount != -1) {
-			[self displayAlertWithHeader:NSLocalizedString(@"Warning",nil) 
-								 andBody:NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.",nil)];
-			[self retrieveGoogleFeed];
-			DLog(@"Error marking all as read");
-		}
+	} else if (totalUnreadCount != -1) {
+		[self displayAlertWithHeader:NSLocalizedString(@"Warning",nil) 
+							 andBody:NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.",nil)];
+		[self retrieveGoogleFeed];
+		DLog(@"Error marking all as read");
 	}
 }
 
@@ -630,6 +620,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[self getUnreadCountWithDeferredCall:nil];
 	}
 	[atomdoc release];
+	currentlyFetchingAndUpdating = NO;
 	DLog(@"retrieveGoogleFeed end");
 }
 
@@ -653,8 +644,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 - (void)processFailUnreadCount:(NSError *)error {
 	totalUnreadCount = -1;
-	[self errorImageOn]; 
-	currentlyFetchingAndUpdating = NO;
+	[self errorImageOn];
 	[lastCheckTimer invalidate];
 	[self createLastCheckTimer];
 	[lastCheckTimer fire];
@@ -796,12 +786,14 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 - (void)updateMenu {
 	DLog(@"updateMenu begin");
 	currentlyFetchingAndUpdating = YES;
-	[self updateTorrentCasting];
-	[self updateNormalButtons];
-	[self updateFeeds];
-	[self updateNotifications];
-	[self updateShowCount];
-	[self updateReadLabel];
+	@synchronized(self) {
+		[self updateTorrentCasting];
+		[self updateFeeds];
+		[self updateNormalButtons];
+		[self updateNotifications];
+		[self updateShowCount];
+		[self updateReadLabel];
+	}
 	currentlyFetchingAndUpdating = NO;
 	DLog(@"updateMenu end");
 	[self printStatus];
@@ -883,12 +875,13 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 - (void)updateNormalButtons {
 	[self fillResultsIfNeeded];
+	if (needToRemoveNormalButtons) {
+		NSUInteger i;
+		for (i = 0; i <= SEPARATOR2_NBO; i++)
+			[GRMenu removeItemAtIndex:endOfFeedIndex];
+		needToRemoveNormalButtons = NO;
+	}
 	if ([results count] && ![[prefs valueForKey:@"minimalFunction"] boolValue]) {
-		if (needToRemoveNormalButtons) {
-			NSUInteger i;
-			for (i = 0; i <= SEPARATOR2_NBO; i++)
-				[GRMenu removeItemAtIndex:endOfFeedIndex];
-		}
 		// if we have any items in the list, we should put a nice little bar between the normal buttons and the feeditems
 		[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:endOfFeedIndex + SEPARATOR1_NBO];
 		if (moreUnreadExistInGRInterface)
@@ -939,7 +932,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	while (endOfFeedIndex != indexOfPreviewFields)
 		[GRMenu removeItemAtIndex:--endOfFeedIndex];
 	// we loop through the results count, but we cannot go above the maxItems, even though we always fetch one row more than max
-	for (i = 0; i < [results count] && i < [[prefs valueForKey:@"maxItems"] intValue]; i++) {
+	for (i = 0; i < [results count] && i < [[prefs valueForKey:@"maxItems"] integerValue]; i++) {
 		if (![lastIds containsObject:[ids objectAtIndex:i]]) // Growl help
 			[newItems addObject:[results objectAtIndex:i]];
 		if ([[prefs valueForKey:@"minimalFunction"] boolValue])
@@ -981,11 +974,13 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 - (void)updateShowCount {
 	DLog(@"SHOW COUNT: %d", totalUnreadCount);
-	if ([[prefs valueForKey:@"showCount"] boolValue]) {
+	if ([[prefs valueForKey:@"showCount"] boolValue] && totalUnreadCount) {
 		[statusItem setLength:NSVariableStatusItemLength];
 		[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d", totalUnreadCount]]];
-	} else
+	} else {
+		[statusItem setAttributedTitle:[self makeAttributedStatusItemString:@""]];
 		[statusItem setLength:ourStatusItemWithLength];
+	}
 }
 
 - (void)updateReadLabel {
