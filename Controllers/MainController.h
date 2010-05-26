@@ -24,7 +24,6 @@
 	IBOutlet NSWindow * preferences; //preference window
 	IBOutlet NSWindow * addfeedwindow; //addfeed window
 	IBOutlet NSMenu * tempMenu;
-	IBOutlet NSMenu * tempMenuSec;
 	
     NSTimer * mainTimer;
 	NSTimer * lastCheckTimer;
@@ -62,13 +61,14 @@
 	BOOL isLeopard;
 	BOOL currentlyFetchingAndUpdating;
 	BOOL moreUnreadExistInGRInterface;
+	BOOL needToRemoveNormalButtons;
 	
 	NSInteger totalUnreadCount;
 	NSInteger lastCheckMinute;
+	NSInteger endOfFeedIndex;
 }
 
 - (void)downloadFile:(NSString *)filename atUrl:(NSString *)url;
-- (void)removeNumberOfItemsFromMenubar:(NSInteger)number;
 - (NSAttributedString *)makeAttributedStatusItemString:(NSString *)text;
 - (NSAttributedString *)makeAttributedMenuStringWithBigText:(NSString *)bigtext andSmallText:(NSString *)smalltext;
 - (void)addFeed:(NSString *)url;
@@ -76,9 +76,8 @@
 - (void)displayMessage:(NSString *)message;
 - (NSString *)grabUserNo;
 - (NSString *)loginToGoogle;
-- (void)removeAllItemsFromMenubar;
 - (void)getTokenFromGoogle;
-- (void)removeOneItemFromMenu:(NSInteger)index;
+- (void)removeOneFeedFromMenu:(NSInteger)index;
 - (void)timer:(NSTimer *)timer;
 - (void)getUnreadCountWithDeferredCall:(NetParam *)dc;
 - (void)retrieveGoogleFeed;
