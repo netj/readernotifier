@@ -189,8 +189,8 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	storedSID = @"";
 	[self loginToGoogle];
 	// Get the info dictionary (Info.plist)
-    NSDictionary * infoDictionary = [[NSBundle mainBundle] infoDictionary];
-	DLog(@"Hello. %@ Build %@", [infoDictionary objectForKey:@"CFBundleName"], [infoDictionary objectForKey:@"CFBundleVersion"]);
+	DLog(@"Hello. %@ Build %@", 
+		 [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]);
 	if ([prefs valueForKey:@"torrentCastFolderPath"])
 		[torrentCastFolderPath setStringValue:[prefs valueForKey:@"torrentCastFolderPath"]];
 	DLog(@"We're on %@", [[NSProcessInfo processInfo] operatingSystemVersionString]);
