@@ -673,11 +673,10 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 				[torrentcastlinks removeLastObject];
 			}
 			DLog(@"retrieveGoogleFeed 7");
-			[self getUnreadCountWithDeferredCall:nil];			
 		} else
 			moreUnreadExistInGRInterface = NO;
-		//[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
 		[self updateMenu];
+		[self getUnreadCountWithDeferredCall:nil];
 	}
 	DLog(@"retrieveGoogleFeed end");
 }
@@ -942,6 +941,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (void)updateShowCount {
+	DLog(@"SHOW COUNT: %d", totalUnreadCount);
 	if ([[prefs valueForKey:@"showCount"] boolValue]) {
 		[statusItem setLength:NSVariableStatusItemLength];
 		[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d", totalUnreadCount]]];

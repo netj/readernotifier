@@ -23,7 +23,6 @@
 	IBOutlet NSMenu * GRMenu;
 	IBOutlet NSWindow * preferences; //preference window
 	IBOutlet NSWindow * addfeedwindow; //addfeed window
-	IBOutlet NSMenu * tempMenu;
 	
     NSTimer * mainTimer;
 	NSTimer * lastCheckTimer;
