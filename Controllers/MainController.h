@@ -28,7 +28,6 @@
 	NSTimer * lastCheckTimer;
 	
 	NSStatusItem * statusItem;
-	NSError * xmlError;
 	NSUserDefaults * prefs;
 	
 	NSMutableArray * titles;

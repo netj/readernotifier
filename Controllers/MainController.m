@@ -33,15 +33,9 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 #define maxLettersInSummary 500
 #define maxLettersInSource 20
 
-@interface Delegate : NSObject {}
-@end
-
-@implementation Delegate
-- (void)sound:(NSSound *)sound didFinishPlaying:(BOOL)aBool {}
-@end
-
 @interface MainController (PrivateMethods)
 - (void)processLoginToGoogle:(NSString *)result;
+- (void)processFailLoginToGoogle:(NSError *)error;
 - (void)processGoogleFeed:(NSData *)result;
 - (void)processFailGoogleFeed:(NSError *)error;
 - (void)processUnreadCount:(NSData *)result withDeferred:(NetParam *)dc;
@@ -49,6 +43,8 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 - (void)processDownloadFile:(NSString *)filename withData:(NSData *)result;
 - (void)processTokenFromGoogle:(NSString *)result;
 - (void)printStatus;
+- (void)setUpMarkAllAsRead;
+- (void)downloadAndManageTorrentFileForIndex:(NSUInteger)i;
 - (void)updateTorrentCasting;
 - (void)updateNormalButtons;
 - (void)updateFeeds;
@@ -56,48 +52,48 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 - (void)updateShowCount;
 - (void)updateReadLabel;
 - (void)fillResultsIfNeeded;
+- (void)parseFeeds:(NSXMLDocument *)atomdoc;
+- (void)parseIds:(NSXMLDocument *)atomdoc;
+- (void)parseLinks:(NSXMLDocument *)atomdoc;
+- (void)parseSummaries:(NSXMLDocument *)atomdoc;
+- (void)parseTorrentCastLinks:(NSXMLDocument *)atomdoc;
+- (void)parseUnreadCount:(NSXMLDocument *)atomdoc;
+- (void)setUpMainFeedItem:(NSMenuItem *)item withTitleTag:(NSString *)trimmedTitleTag sourceTag:(NSString *)trimmedSourceTag andIndex:(NSUInteger)i;
+- (void)setUpAlternateFeedItem:(NSMenuItem *)item withSourceTag:(NSString *)trimmedSourceTag andIndex:(NSUInteger)i;
 @end
-
 
 @implementation MainController
 
 #pragma mark MemoryManagement
 
 - (id)init {
-	[super init];
-	[self setupEventHandlers];
-	
-	NSMutableDictionary * defaultPrefs = [NSMutableDictionary dictionary];
-	
-	[defaultPrefs setObject:@"20" forKey:@"maxItems"];
-	[defaultPrefs setObject:@"10" forKey:@"timeDelay"];
-	[defaultPrefs setObject:@"" forKey:@"Label"];
-	[defaultPrefs setObject:@"5" forKey:@"maxNotifications"];
-	[defaultPrefs setObject:@"NO" forKey:@"EnableTorrentCastMode"];
-
-	prefs = [[NSUserDefaults standardUserDefaults] retain];
-	[prefs registerDefaults:defaultPrefs];	
-	
-	networkManager = [[IPMNetworkManager alloc] init];
-	currentToken = nil;
-	endOfFeedIndex = indexOfPreviewFields;
-	needToRemoveNormalButtons = NO;
-	
-	// in earlier versions this was set to the actual user password, which we would want to override
-	[prefs setObject:@"NotForYourEyes" forKey:@"Password"];
-	
-	normalAttrsDictionary = [[NSDictionary alloc] initWithObjects:[NSArray arrayWithObjects: [NSFont fontWithName:@"Lucida Grande" size:14.0], nil] forKeys:[NSArray arrayWithObjects: NSFontAttributeName, nil ]];
-	smallAttrsDictionary = [[NSDictionary alloc] initWithObjects:[NSArray arrayWithObjects: [NSFont fontWithName:@"Lucida Grande" size:12.0], [NSColor grayColor], nil] forKeys:[NSArray arrayWithObjects: NSFontAttributeName, NSForegroundColorAttributeName, nil ]];
-
-	/*NSNotificationCenter * nc = [NSNotificationCenter defaultCenter];
-	[nc addObserver:self 
-		   selector:@selector(updateMenu)
-			   name:@"PleaseUpdateMenu"
-			 object:GRMenu];*/
-
-	// we need this to know when the computer wakes from sleep
-	[[[NSWorkspace sharedWorkspace] notificationCenter] addObserver:self selector:@selector(awakenFromSleep) name:NSWorkspaceDidWakeNotification object:nil];
-
+	if (self = [super init]) {
+		[self setupEventHandlers];
+		NSMutableDictionary * defaultPrefs = [NSMutableDictionary dictionary];
+		[defaultPrefs setObject:@"20" forKey:@"maxItems"];
+		[defaultPrefs setObject:@"10" forKey:@"timeDelay"];
+		[defaultPrefs setObject:@"" forKey:@"Label"];
+		[defaultPrefs setObject:@"5" forKey:@"maxNotifications"];
+		[defaultPrefs setObject:@"NO" forKey:@"EnableTorrentCastMode"];
+		prefs = [[NSUserDefaults standardUserDefaults] retain];
+		[prefs registerDefaults:defaultPrefs];	
+		networkManager = [[IPMNetworkManager alloc] init];
+		currentToken = nil;
+		endOfFeedIndex = indexOfPreviewFields;
+		needToRemoveNormalButtons = NO;
+		// in earlier versions this was set to the actual user password, which we would want to override
+		[prefs setObject:@"NotForYourEyes" forKey:@"Password"];
+		NSArray * o = [NSArray arrayWithObjects: [NSFont fontWithName:@"Lucida Grande" size:14.0], nil];
+		NSArray * k = [NSArray arrayWithObjects: NSFontAttributeName, nil];
+		normalAttrsDictionary = [[NSDictionary alloc] initWithObjects:o 
+															  forKeys:k];
+		o = [NSArray arrayWithObjects: [NSFont fontWithName:@"Lucida Grande" size:12.0], [NSColor grayColor], nil];
+		k = [NSArray arrayWithObjects: NSFontAttributeName, NSForegroundColorAttributeName, nil];
+		smallAttrsDictionary = [[NSDictionary alloc] initWithObjects:o 
+															 forKeys:k];
+		// we need this to know when the computer wakes from sleep
+		[[[NSWorkspace sharedWorkspace] notificationCenter] addObserver:self selector:@selector(awakenFromSleep) name:NSWorkspaceDidWakeNotification object:nil];
+	}
 	return self;
 }
 
@@ -175,28 +171,28 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	newItems = [[NSMutableArray alloc] init];
 	summaries = [[NSMutableArray alloc] init];
 	torrentcastlinks = [[NSMutableArray alloc] init];
-	
 	lastCheckMinute = 0;
-	
-	[[GRMenu insertItemWithTitle:NSLocalizedString(@"Go to Reader",nil) action:@selector(launchSite:) keyEquivalent:@"" atIndex:READER_FF] setTarget:self];
-	[[GRMenu insertItemWithTitle:NSLocalizedString(@"Subscribe to Feed",nil) action:@selector(openAddFeedWindow:) keyEquivalent:@"" atIndex:SUBSCRIBE_FF] setTarget:self];
-	[[GRMenu insertItemWithTitle:NSLocalizedString(@"Preferences...",nil) action:@selector(openPrefs:) keyEquivalent:@"" atIndex:PREFERENCES_FF] setTarget:self];
-	[[GRMenu insertItemWithTitle:NSLocalizedString(@"Check Now",nil) action:@selector(checkNow:) keyEquivalent:@"" atIndex:CHECKNOW_FF] setTarget:self];	
+	[[GRMenu insertItemWithTitle:NSLocalizedString(@"Go to Reader",nil) 
+						  action:@selector(launchSite:) 
+				   keyEquivalent:@"" atIndex:READER_FF] setTarget:self];
+	[[GRMenu insertItemWithTitle:NSLocalizedString(@"Subscribe to Feed",nil) 
+						  action:@selector(openAddFeedWindow:) 
+				   keyEquivalent:@"" atIndex:SUBSCRIBE_FF] setTarget:self];
+	[[GRMenu insertItemWithTitle:NSLocalizedString(@"Preferences...",nil) 
+						  action:@selector(openPrefs:) keyEquivalent:@"" 
+						 atIndex:PREFERENCES_FF] setTarget:self];
+	[[GRMenu insertItemWithTitle:NSLocalizedString(@"Check Now",nil) 
+						  action:@selector(checkNow:) keyEquivalent:@"" 
+						 atIndex:CHECKNOW_FF] setTarget:self];	
 	[[GRMenu itemAtIndex:CHECKNOW_FF] setAttributedTitle:[self makeAttributedMenuStringWithBigText:NSLocalizedString(@"Check Now",nil) andSmallText:@""]];
 	[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:SEPARATOR_FF];
-	
 	storedSID = @"";
 	[self loginToGoogle];
-	
 	// Get the info dictionary (Info.plist)
-    NSDictionary * infoDictionary;
-	infoDictionary = [[NSBundle mainBundle] infoDictionary];
-	
+    NSDictionary * infoDictionary = [[NSBundle mainBundle] infoDictionary];
 	DLog(@"Hello. %@ Build %@", [infoDictionary objectForKey:@"CFBundleName"], [infoDictionary objectForKey:@"CFBundleVersion"]);
-	
 	if ([prefs valueForKey:@"torrentCastFolderPath"])
 		[torrentCastFolderPath setStringValue:[prefs valueForKey:@"torrentCastFolderPath"]];
-	
 	DLog(@"We're on %@", [[NSProcessInfo processInfo] operatingSystemVersionString]);
 }
 
@@ -206,13 +202,15 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 - (IBAction)checkNow:(id)sender {	
 	// first we check if the user has put in a password and username beforehand
 	if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
-		[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
-							 andBody:NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
+		[self displayAlertWithHeader:NSLocalizedString(@"Error", nil) 
+							 andBody:NSLocalizedString(@"It seems you do not have a password in the Keychain. "
+													   @"Please go to the preferences now and supply your password", nil)];
 		[self errorImageOn];
 		storedSID = @"";
 	} else if ([[prefs valueForKey:@"Username"] isEqualToString:@""] || ![prefs valueForKey:@"Username"]) {
 		[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
-							 andBody:NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
+							 andBody:NSLocalizedString(@"It seems you do not have a username filled in. "
+													   @"Please go to the preferences now and supply your username", nil)];
 		[self errorImageOn];
 		storedSID = @"";
 	} else {
@@ -231,7 +229,9 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (IBAction)launchSite:(id)sender {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/accounts/SetSID?ssdc=1&sidt=%@&continue=http%%3A%%2F%%2Fgoogle.com%%2Freader%%2Fview%%2F", storedSID]]];
+	NSString * format = @"https://www.google.com/accounts/SetSID?ssdc=1&sidt=%@&continue=http%%3A%%2F%%2Fgoogle.com%%2Freader%%2Fview%%2F";
+	NSString * url = [NSString stringWithFormat:format, storedSID];
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:url]];
 }
 
 - (IBAction)openAllItems:(id)sender {
@@ -259,8 +259,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		if ([[prefs valueForKey:@"showCount"] boolValue])
 			[statusItem setAttributedTitle:[self makeAttributedStatusItemString:[NSString stringWithFormat:@"%d",[results count]-1]]];
 		NSUInteger index = [ids indexOfObjectIdenticalTo:[sender title]];
-		DLog(@"Index is %d", index);
-		DLog(@"NUMBER OF ITEMS IS, %d", [GRMenu numberOfItems]);
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[links objectAtIndex:index]]];
 		[self markOneAsReadDetached:[NSNumber numberWithInt:index]];
 	} else
@@ -273,11 +271,12 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	// Because we cannot be absolutely sure that the user has not clicked the GRMenu before a new update has occored 
 	// (we make use of the id - and hopefully it will be an absolute). 
 	if ([ids containsObject:[sender title]]) {
-		int index = [ids indexOfObjectIdenticalTo:[sender title]];
+		NSUInteger index = [ids indexOfObjectIdenticalTo:[sender title]];
+		NSNumber * indexNumber = [NSNumber numberWithUnsignedInteger:index];
 		if ([[prefs valueForKey:@"onOptionalActAlsoStarItem"] boolValue])
-			[self markOneAsStarredDetached:[NSNumber numberWithInt:index]];
+			[self markOneAsStarredDetached:indexNumber];
 		else
-			[self markOneAsReadDetached:[NSNumber numberWithInt:index]];
+			[self markOneAsReadDetached:indexNumber];
 	} else {
 		currentlyFetchingAndUpdating = NO;
 		DLog(@"Item has already gone away, so we cannot refetch it");
@@ -308,7 +307,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	storedSID = @"";
 	[prefs setObject:[NSString stringWithString:[usernameField stringValue]] forKey:@"Username"];
 	NSString * password = [passwordField stringValue];
-	if ([Keychain checkForExistanceOfKeychain] > 0)
+	if ([Keychain checkForExistanceOfKeychain])
 		[Keychain modifyKeychainItem:password];
 	else
 		[Keychain addKeychainItem:password];
@@ -340,11 +339,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 #pragma mark Growl Method
 
 - (void)growlNotificationWasClicked:(id)clickContext {
-	// This doesn't seem to work correctly
-	while (currentlyFetchingAndUpdating) // TODO: get rid of this busy waiting...
-		DLog(@"Growl click: We are currently updating and fetching... waiting");
-	DLog(@"Growl click: Running...not waiting");
-	currentlyFetchingAndUpdating == YES; // TODO: WTF is this? need to investigate more this method, as it is now seems like a big mess
 	if ([ids containsObject:clickContext])
 		[self launchLink:[GRMenu itemWithTitle:clickContext]];
 	else
@@ -389,7 +383,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	currentlyFetchingAndUpdating = YES;
 	// in case we had an error before, clear the highlightedimage and displaymessage
 	[statusItem setAlternateImage:highlightedImage];
-	xmlError = [[[NSError alloc] init] autorelease];
 	[lastIds setArray:ids];
 	[results removeAllObjects];
 	[titles removeAllObjects];
@@ -421,7 +414,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		NSString * p1 = [self usernameForAuthenticationChallengeWithParam:nil];
 		NSString * p2 = [self passwordForAuthenticationChallengeWithParam:nil];
 		NSString * params = [NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d", p1, p2, versionBuildNumber];
-		NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processLoginToGoogle:) andFail:0 onTarget:self];
+		NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processLoginToGoogle:) andFail:@selector(processFailLoginToGoogle:) onTarget:self];
 		[networkManager sendPOSTNetworkRequest:@"https://www.google.com/accounts/ClientLogin" 
 									  withBody:params 
 							  withResponseType:NSSTRING_NRT 
@@ -460,8 +453,9 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		// we replace all instances of = to %3D for google
 		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:index]];
 		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
-		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@", 
-						  [self getURLPrefix], feedstring, [ids objectAtIndex:index], currentToken];
+		NSString * format = @"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/"
+							@"-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@";
+		NSString * url = [NSString stringWithFormat:format, [self getURLPrefix], feedstring, [ids objectAtIndex:index], currentToken];
 		[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
 		[feedstring release];
 		totalUnreadCount--;
@@ -477,8 +471,9 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	for (j = 0; j < [results count]; j++) {
 		NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:j]];
 		[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
-		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",
-						  [self getURLPrefix],feedstring,[ids objectAtIndex:j],currentToken];
+		NSString * format = @"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/"
+							@"-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@";
+		NSString * url = [NSString stringWithFormat:format, [self getURLPrefix],feedstring,[ids objectAtIndex:j],currentToken];
 		[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
 		[feedstring release];
 	}
@@ -502,7 +497,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[titles removeAllObjects];
 		[sources removeAllObjects];
 		totalUnreadCount = 0;
-		//[[NSNotificationCenter defaultCenter] postNotificationName:@"PleaseUpdateMenu" object:nil];
 		[self updateMenu];
 	} else {
 		if (totalUnreadCount != -1) {
@@ -564,105 +558,63 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 #pragma mark Processing
 
 - (void)processLoginToGoogle:(NSString *)result {
-	if ([result isEqualToString:@""]) {
-		storedSID = @""; // userSID = @"";
-		[prefs setObject:@"" forKey:@"storedSID"];
-		[self displayMessage:@"no Internet connection"];
-		[self errorImageOn];
+	NSScanner * theScanner;
+	theScanner = [NSScanner scannerWithString:[NSString stringWithString:result]];
+	if ([theScanner scanString:@"SID=" intoString:NULL] 
+		&& [theScanner scanUpToString:@"\nLSID=" intoString:&storedSID]) {
+		storedSID = [NSString stringWithFormat:@"SID=%@;",storedSID];
+		networkManager.sid = storedSID;
+		[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] integerValue]];
+		[mainTimer fire];
 		[self createLastCheckTimer];
-		[lastCheckTimer fire];		
+		[lastCheckTimer fire];
 	} else {
-		NSScanner * theScanner;
-		theScanner = [NSScanner scannerWithString:[NSString stringWithString:result]];
-		if ([theScanner scanString:@"SID=" intoString:NULL] 
-			&& [theScanner scanUpToString:@"\nLSID=" intoString:&storedSID]) {
-			storedSID = [NSString stringWithFormat:@"SID=%@;",storedSID];
-			networkManager.sid = storedSID;
-			[self setTimeDelay:[[prefs valueForKey:@"timeDelay"] integerValue]];
-			[mainTimer fire];
-			[self createLastCheckTimer];
-			[lastCheckTimer fire];
+		if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
+			[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
+								 andBody:NSLocalizedString(@"It seems you do not have a password in the Keychain. "
+														   @"Please go to the preferences now and supply your password",nil)];
+			[self displayMessage:@"please enter login details"];
+		} else if ([[prefs valueForKey:@"Username"] isEqualToString:@""] || ![prefs valueForKey:@"Username"]) {
+			[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
+								 andBody:NSLocalizedString(@"It seems you do not have a username filled in. "
+														   @"Please go to the preferences now and supply your username",nil)];
+			[self displayMessage:@"please enter login details"];
 		} else {
-			if ([[self getUserPasswordFromKeychain] isEqualToString:@""]) {
-				[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
-									 andBody:NSLocalizedString(@"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password",nil)];
-				[self displayMessage:@"please enter login details"];
-			} else if ([[prefs valueForKey:@"Username"] isEqualToString:@""] || ![prefs valueForKey:@"Username"]) {
-				[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) 
-									 andBody:NSLocalizedString(@"It seems you do not have a username filled in. Please go to the preferences now and supply your username",nil)];
-				[self displayMessage:@"please enter login details"];
-			} else {
-				[self displayAlertWithHeader:NSLocalizedString(@"Authentication error",nil) 
-									 andBody:[NSString stringWithFormat:@"Reader Notifier could not handshake with Google. You probably have entered a wrong user or pass. The error supplied by Google servers was: %@", result]];
-				[self displayMessage:@"wrong user or pass"];				
-			}
-			storedSID = @"";
-			[self errorImageOn];
+			[self displayAlertWithHeader:NSLocalizedString(@"Authentication error",nil) 
+								 andBody:[NSString stringWithFormat:@"Reader Notifier could not handshake with Google. "
+										  @"You probably have entered a wrong user or pass. The error supplied by Google servers was: %@", result]];
+			[self displayMessage:@"wrong username or password"];				
 		}
-		[prefs setObject:storedSID forKey:@"storedSID"];
+		storedSID = @"";
+		[self errorImageOn];
 	}
+	[prefs setObject:storedSID forKey:@"storedSID"];
+}
+
+- (void)processFailLoginToGoogle:(NSError *)error {
+	storedSID = @"";
+	[prefs setObject:@"" forKey:@"storedSID"];
+	[self displayMessage:@"no Internet connection"];
+	[self errorImageOn];
+	[self createLastCheckTimer];
+	[lastCheckTimer fire];
 }
 
 - (void)processGoogleFeed:(NSData *)result {
+	DLog(@"retrieveGoogleFeed begin");
+	NSError * xmlError = nil;
 	NSXMLDocument * atomdoc = [[NSXMLDocument alloc] initWithData:result options:0 error:&xmlError];
-	[titles addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/title/text()" error:NULL]];
-	[sources addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/title/text()" error:NULL]];
-	[ids addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/id/text()" error:NULL]];
-	[feeds addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/@gr:stream-id" error:NULL]];
-	[user addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/id/text()" error:NULL]];
-	DLog(@"retrieveGoogleFeed 1");
-	NSUInteger k = 0;
-	for(k = 0; k < [titles count]; k++) {
-		NSArray * tempArray0 = [atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@rel='alternate']/@href",k+1] error:NULL];
-		if([tempArray0 count] > 0)
-			[links insertObject:[[tempArray0 objectAtIndex:0] stringValue] atIndex:k];
-		else
-			[links insertObject:@"" atIndex:k];
-	}
-	DLog(@"retrieveGoogleFeed 2");
-	NSUInteger m = 0;
-	for (m = 0; m < [titles count]; m++) {
-		NSArray * tempArray2 = [atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/summary/text()", m + 1] error:NULL];
-		if ([tempArray2 count] > 0)
-			[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [Utilities flattenHTML:[Utilities trimDownString:[[tempArray2 objectAtIndex:0] stringValue] withMaxLenght:maxLettersInSummary]]] atIndex:m];
-		else {
-			NSArray * tempArray3 = [atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/content/text()", m + 1] error:NULL];
-			if([tempArray3 count] > 0)
-				[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", [Utilities flattenHTML:[Utilities trimDownString:[[tempArray3 objectAtIndex:0] stringValue] withMaxLenght:maxLettersInSummary]]] atIndex:m];
-			else
-				[summaries insertObject:@"" atIndex:m];
-		}
-	}
-	DLog(@"retrieveGoogleFeed 2a");
-	// torrentcasting
-	NSUInteger l;
-	for (l = 0; l < [titles count]; l++) {
-		NSArray * tempArray2 = [atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@type='application/x-bittorrent']/@href", l + 1] 
-												   error:NULL];
-		if ([tempArray2 count] > 0)
-			[torrentcastlinks insertObject:[[tempArray2 objectAtIndex:0] stringValue] atIndex:l];
-		else
-			[torrentcastlinks insertObject:@"" atIndex:l];
-	}
-	[atomdoc release];
-	DLog(@"retrieveGoogleFeed 3");
-	NSUInteger j;
-	for(j = 0; j < [feeds count]; j++)
-		[feeds replaceObjectAtIndex:j withObject:[[feeds objectAtIndex:j] stringValue]];
-	DLog(@"retrieveGoogleFeed 4");
-	NSUInteger d;
-	for(d = 0; d < [ids count]; d++)
-		[ids replaceObjectAtIndex:d withObject:[[ids objectAtIndex:d] stringValue]];
-	DLog(@"retrieveGoogleFeed 5");
 	if (!xmlError) {
-		// We need to set the global whether there are (at least one) more unread items online in the google reader interface
+		[titles addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/title/text()" error:NULL]];
+		[sources addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/title/text()" error:NULL]];
+		[self parseIds:atomdoc];
+		[self parseFeeds:atomdoc];
+		[user addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/id/text()" error:NULL]];
+		[self parseLinks:atomdoc];
+		[self parseSummaries:atomdoc];
+		[self parseTorrentCastLinks:atomdoc];
 		if ([titles count] > [[prefs valueForKey:@"maxItems"] intValue]) {
 			moreUnreadExistInGRInterface = YES;
-			// We also remove the last item, since we do not wish to display it anywhere, or fuck up the count
-			//  note, we remove the first item, which is actually the oldest (we reversed the array earlier)
-			//  ! we could actually skip all the maxItems checks later, but they're nice to have.
-			/// UPDATE! We do not reverse it any longer! So now we just remove the last item
-			DLog(@"retrieveGoogleFeed 6");
 			if ([ids count] > 0) {
 				[titles removeLastObject];
 				[sources removeLastObject];
@@ -672,12 +624,12 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 				[summaries removeLastObject];
 				[torrentcastlinks removeLastObject];
 			}
-			DLog(@"retrieveGoogleFeed 7");
 		} else
 			moreUnreadExistInGRInterface = NO;
 		[self updateMenu];
 		[self getUnreadCountWithDeferredCall:nil];
 	}
+	[atomdoc release];
 	DLog(@"retrieveGoogleFeed end");
 }
 
@@ -690,24 +642,10 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (void)processUnreadCount:(NSData *)result withDeferred:(NetParam *)dc {
-	NSXMLDocument * atomdoc2 = [[NSXMLDocument alloc] initWithData:result options:0 error:&xmlError];
-	NSString * xQuery;
-	if ([[prefs valueForKey:@"Label"] isEqualToString:@""]) // if the user is on labels, use that to check instead!
-		xQuery = @"for $x in /object/list/object where $x/string[contains(., 'reading-list')] return $x/number[@name=\"count\"]/text()";
-	else {
-		NSString * format = @"for $x in /object/list/object where $x/string[contains(., '/label/%@')] return $x/number[@name=\"count\"]/text()";
-		xQuery = [NSString stringWithFormat:format, [prefs valueForKey:@"Label"]];
-	}
-	NSArray * tempArray5 = [atomdoc2 objectsForXQuery:xQuery error:NULL];
-	NSInteger k = 0, t = 0;
-	NSString * dString;
-	for (k = 0; k < [tempArray5 count]; k++) {
-		dString = [[tempArray5 objectAtIndex:k] stringValue];
-		t += [dString integerValue];
-	}
-	totalUnreadCount = t;
-	[atomdoc2 release];
-	DLog(@"The total count of unread items is now %d", t);
+	NSXMLDocument * atomdoc = [[NSXMLDocument alloc] initWithData:result options:0 error:NULL];
+	[self parseUnreadCount:atomdoc];
+	[atomdoc release];
+	DLog(@"The total count of unread items is now %d", totalUnreadCount);
 	[self updateShowCount];
 	if (dc)
 		[dc invokeSuccessWithFirstParam:nil];
@@ -730,6 +668,80 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	if (currentToken)
 		[currentToken release];
 	currentToken = [result retain];
+}
+
+#pragma mark -
+#pragma mark Parsing Methods
+
+- (void)parseFeeds:(NSXMLDocument *)atomdoc {
+	[feeds addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/source/@gr:stream-id" error:NULL]];
+	NSUInteger i;
+	for(i = 0; i < [feeds count]; i++)
+		[feeds replaceObjectAtIndex:i withObject:[[feeds objectAtIndex:i] stringValue]];
+}
+
+- (void)parseIds:(NSXMLDocument *)atomdoc {
+	[ids addObjectsFromArray:[atomdoc objectsForXQuery:@"/feed/entry/id/text()" error:NULL]];
+	NSUInteger i;
+	for(i = 0; i < [ids count]; i++)
+		[ids replaceObjectAtIndex:i withObject:[[ids objectAtIndex:i] stringValue]];
+}
+
+- (void)parseLinks:(NSXMLDocument *)atomdoc {
+	NSUInteger i;
+	for(i = 0; i < [titles count]; i++) {
+		NSArray * tmp = [atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/link[@rel='alternate']/@href", i + 1] error:NULL];
+		if([tmp count] > 0)
+			[links insertObject:[[tmp objectAtIndex:0] stringValue] atIndex:i];
+		else
+			[links insertObject:@"" atIndex:i];
+	}
+}
+
+- (void)parseSummaries:(NSXMLDocument *)atomdoc {
+	NSUInteger i = 0;
+	for (i = 0; i < [titles count]; i++) {
+		NSArray * tmp = [atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/summary/text()", i + 1] error:NULL];
+		if ([tmp count] > 0) {
+			NSString * flattenString = [Utilities flattenHTML:[Utilities trimDownString:[[tmp objectAtIndex:0] stringValue] 
+																		  withMaxLenght:maxLettersInSummary]];
+			[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", flattenString] atIndex:i];
+		} else {
+			tmp = [atomdoc objectsForXQuery:[NSString stringWithFormat:@"/feed/entry[%d]/content/text()", i + 1] error:NULL];
+			if([tmp count] > 0) {
+				NSString * flattenString = [Utilities flattenHTML:[Utilities trimDownString:[[tmp objectAtIndex:0] stringValue] 
+																			  withMaxLenght:maxLettersInSummary]];
+				[summaries insertObject:[NSString stringWithFormat:@"\n\n%@", flattenString] atIndex:i];	
+			} else
+				[summaries insertObject:@"" atIndex:i];
+		}
+	}
+}
+
+- (void)parseTorrentCastLinks:(NSXMLDocument *)atomdoc {
+	// torrentcasting
+	NSUInteger i;
+	for (i = 0; i < [titles count]; i++) {
+		NSString * xQuery = [NSString stringWithFormat:@"/feed/entry[%d]/link[@type='application/x-bittorrent']/@href", i + 1];
+		NSArray * tmp = [atomdoc objectsForXQuery:xQuery error:NULL];
+		if ([tmp count])
+			[torrentcastlinks insertObject:[[tmp objectAtIndex:0] stringValue] atIndex:i];
+		else
+			[torrentcastlinks insertObject:@"" atIndex:i];
+	}
+}
+
+- (void)parseUnreadCount:(NSXMLDocument *)atomdoc {
+	NSString * xQuery = @"for $x in /object/list/object where $x/string[contains(., 'reading-list')] return $x/number[@name=\"count\"]/text()";;
+	if (![[prefs valueForKey:@"Label"] isEqualToString:@""]) {
+		NSString * format = @"for $x in /object/list/object where $x/string[contains(., '/label/%@')] return $x/number[@name=\"count\"]/text()";
+		xQuery = [NSString stringWithFormat:format, [prefs valueForKey:@"Label"]];
+	}
+	NSArray * tmp = [atomdoc objectsForXQuery:xQuery error:NULL];
+	NSInteger i, t = 0;
+	for (i = 0; i < [tmp count]; i++)
+		t += [[[tmp objectAtIndex:i] stringValue] integerValue];
+	totalUnreadCount = t;
 }
 
 #pragma mark -
@@ -760,21 +772,19 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 - (void)lastTimeCheckedTimer:(NSTimer *)timer {
 	[self getTokenFromGoogle];
-	if (lastCheckMinute > [[prefs valueForKey:@"timeDelay"] integerValue]) {
-		DLog(@"lastTimeChecked is more than it should be, so we run update");
-		if (!currentlyFetchingAndUpdating)
-			[self checkNow:nil];
+	if (lastCheckMinute > [[prefs valueForKey:@"timeDelay"] integerValue] && !currentlyFetchingAndUpdating) {
+		[self checkNow:nil];
 	} else {
 		DLog(@"lastTimeCheckedTimer run %d", lastCheckMinute);
 		if (lastCheckMinute == 0)
-			[self displayLastTimeMessage:[NSString stringWithString:NSLocalizedString(@"Checked less than 1 min ago",nil)]]; /* ok */
+			[self displayLastTimeMessage:NSLocalizedString(@"Checked less than 1 min ago",nil)];
 		else if (lastCheckMinute == 1)
-			[self displayLastTimeMessage:[NSString stringWithString:NSLocalizedString(@"Checked 1 min ago",nil)]]; /* ok */
+			[self displayLastTimeMessage:NSLocalizedString(@"Checked 1 min ago",nil)];
 		else if (lastCheckMinute < 60)
 			[self displayLastTimeMessage:[NSString stringWithFormat:NSLocalizedString(@"Checked %d min ago",nil), lastCheckMinute]];
 		else {
 			NSUInteger hours = lastCheckMinute / 60;
-			[self displayLastTimeMessage:[NSString stringWithFormat:NSLocalizedString(@"Checked %d hour(s) ago",nil), hours]]; /* ok */
+			[self displayLastTimeMessage:[NSString stringWithFormat:NSLocalizedString(@"Checked %d hour(s) ago",nil), hours]];
 		}
 		lastCheckMinute++;
 	}
@@ -787,7 +797,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	DLog(@"updateMenu begin");
 	currentlyFetchingAndUpdating = YES;
 	[self updateTorrentCasting];
-	[self fillResultsIfNeeded];
 	[self updateNormalButtons];
 	[self updateFeeds];
 	[self updateNotifications];
@@ -806,6 +815,29 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[results addObject:[NSString stringWithFormat:@"%d", c]];
 }
 
+- (void)downloadAndManageTorrentFileForIndex:(NSUInteger)i {
+	[self downloadFile:[NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]] atUrl:[torrentcastlinks objectAtIndex:i]];
+	NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:i]];
+	[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
+	NSString * format = @"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/"
+						@"-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@";
+	NSString * url = [NSString stringWithFormat:format, [self getURLPrefix], feedstring, [ids objectAtIndex:i], currentToken];
+	[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
+	[feedstring release];
+	if ([[prefs valueForKey:@"openTorrentAfterDownloading"] boolValue]) {
+		NSString * filePath = [NSString stringWithFormat:@"%@/%@", 
+							   [prefs valueForKey:@"torrentCastFolderPath"], [NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]];
+		[[NSWorkspace sharedWorkspace] openFile:filePath];
+	}
+	[feeds removeObjectAtIndex:i];
+	[ids removeObjectAtIndex:i];
+	[links removeObjectAtIndex:i];
+	[titles removeObjectAtIndex:i];
+	[sources removeObjectAtIndex:i];
+	[summaries removeObjectAtIndex:i];
+	[torrentcastlinks removeObjectAtIndex:i];
+}
+
 - (void)updateTorrentCasting {
 	// EXPERIMENTAL
 	/// This is a feature in development!
@@ -814,36 +846,38 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	if ([prefs boolForKey:@"EnableTorrentCastMode"]) {
 		NSUInteger i = 0;		
 		for (i = 0; i < [titles count]; i++) {
-			if (![[torrentcastlinks objectAtIndex:i] isEqualToString:@""]) {
-				NSFileManager * fm = [NSFileManager defaultManager];	
-				if ([fm fileExistsAtPath:[prefs valueForKey:@"torrentCastFolderPath"]]) { 
-					[self downloadFile:[NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]] atUrl:[torrentcastlinks objectAtIndex:i]];
-					NSMutableString * feedstring = [[NSMutableString alloc] initWithString:[feeds objectAtIndex:i]];
-					[feedstring replaceOccurrencesOfString:@"=" withString:@"-" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [feedstring length])];
-					NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?s=%@&i=%@&ac=edit-tags&a=user/-/state/com.google/read&r=user/-/state/com.google/kept-unread&T=%@",
-									  [self getURLPrefix], feedstring, [ids objectAtIndex:i], currentToken];
-					[networkManager sendPOSTNetworkRequest:url withBody:@"" withResponseType:NORESPONSE_NRT delegate:nil andParam:nil];
-					[feedstring release];
-					if ([[prefs valueForKey:@"openTorrentAfterDownloading"] boolValue]) {
-						DLog(@"%@", [NSString stringWithFormat:@"%@/%@", 
-									 [prefs valueForKey:@"torrentCastFolderPath"], 
-									 [NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]]);
-						[[NSWorkspace sharedWorkspace] openFile:[NSString stringWithFormat:@"%@/%@", [prefs valueForKey:@"torrentCastFolderPath"], [NSString stringWithFormat:@"%@.torrent", [titles objectAtIndex:i]]]];
-					}
-					[feeds removeObjectAtIndex:i];
-					[ids removeObjectAtIndex:i];
-					[links removeObjectAtIndex:i];
-					[titles removeObjectAtIndex:i];
-					[sources removeObjectAtIndex:i];
-					[summaries removeObjectAtIndex:i];
-					[torrentcastlinks removeObjectAtIndex:i];				
-				} else {
-					[self displayAlertWithHeader:NSLocalizedString(@"TorrentCast Error",nil) 
-										 andBody:NSLocalizedString(@"Reader Notifier has found a new TorrentCast. However we are unable to download it because the folder you've specified does not exists. Please choose a new folder in the preferences. In addition, TorrentCasting has been disabled.",nil)];
-					[prefs setValue:NO forKey:@"EnableTorrentCastMode"];
-				}
+			if ([[torrentcastlinks objectAtIndex:i] isEqualToString:@""])
+				continue;
+			NSFileManager * fm = [NSFileManager defaultManager];	
+			if ([fm fileExistsAtPath:[prefs valueForKey:@"torrentCastFolderPath"]])
+				[self downloadAndManageTorrentFileForIndex:i];
+			else {
+				[self displayAlertWithHeader:NSLocalizedString(@"TorrentCast Error",nil) 
+									 andBody:NSLocalizedString(@"Reader Notifier has found a new TorrentCast. "
+															   @"However we are unable to download it because the folder you've specified does not exists. "
+															   @"Please choose a new folder in the preferences. "
+															   @"In addition, TorrentCasting has been disabled.", nil)];
+				[prefs setValue:NO forKey:@"EnableTorrentCastMode"];
 			}
 		}
+	}
+}
+
+- (void)setUpMarkAllAsRead {
+	if (![[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue]) {			
+		[GRMenu insertItemWithTitle:NSLocalizedString(@"More unread items exist", nil) action:nil keyEquivalent:@"" atIndex:endOfFeedIndex + MARK_ALL_NBO]; 
+		[[GRMenu itemAtIndex:endOfFeedIndex] setToolTip:NSLocalizedString(@"Mark all as read has been disabled", nil)];
+	} else {
+		[[GRMenu insertItemWithTitle:NSLocalizedString(@"Mark all as read", nil) 
+							  action:@selector(markAllAsRead:) 
+					   keyEquivalent:@"" 
+							 atIndex:endOfFeedIndex + MARK_ALL_NBO] setTarget:self];
+		NSAttributedString * as = [self makeAttributedMenuStringWithBigText:NSLocalizedString(@"Mark all as read", nil) 
+															   andSmallText:NSLocalizedString(@"Warning, items online will be marked read", nil)];
+		[[GRMenu itemAtIndex:endOfFeedIndex] setAttributedTitle:as];
+		[[GRMenu itemAtIndex:endOfFeedIndex] setToolTip:NSLocalizedString(@"There are more unread items online in the Google Reader interface. "
+																		  @"This function will cause Google Reader Notifier to mark all as read "
+																		  @"- whether or not they are visible in the menubar", nil)];
 	}
 }
 
@@ -857,24 +891,46 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		}
 		// if we have any items in the list, we should put a nice little bar between the normal buttons and the feeditems
 		[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:endOfFeedIndex + SEPARATOR1_NBO];
-		if (moreUnreadExistInGRInterface) {
-			// we don't want to display the Mark all as read if there are more items in the Google Reader Interface
-			// though we check if the users wants to override this
-			if (![[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue]) {			
-				[GRMenu insertItemWithTitle:NSLocalizedString(@"More unread items exist",nil) action:nil keyEquivalent:@"" atIndex:endOfFeedIndex + MARK_ALL_NBO]; 
-				[[GRMenu itemAtIndex:endOfFeedIndex] setToolTip:NSLocalizedString(@"Mark all as read has been disabled",nil)];
-			} else {
-				[[GRMenu insertItemWithTitle:NSLocalizedString(@"Mark all as read",nil) action:@selector(markAllAsRead:) keyEquivalent:@"" atIndex:endOfFeedIndex + MARK_ALL_NBO] setTarget:self];
-				[[GRMenu itemAtIndex:endOfFeedIndex] setAttributedTitle:[self makeAttributedMenuStringWithBigText:NSLocalizedString(@"Mark all as read",nil) 
-																										   andSmallText:NSLocalizedString(@"Warning, items online will be marked read",nil)]];
-				[[GRMenu itemAtIndex:endOfFeedIndex] setToolTip:NSLocalizedString(@"There are more unread items online in the Google Reader interface. This function will cause Google Reader Notifier to mark all as read - whether or not they are visible in the menubar",nil)];
-			}
-		} else
-			[[GRMenu insertItemWithTitle:NSLocalizedString(@"Mark all as read",nil) action:@selector(markAllAsRead:) keyEquivalent:@"" atIndex:endOfFeedIndex + MARK_ALL_NBO] setTarget:self];
-		[[GRMenu insertItemWithTitle:NSLocalizedString(@"Open all items",nil) action:@selector(openAllItems:) keyEquivalent:@"" atIndex:endOfFeedIndex + OPEN_ALL_NBO] setTarget:self];
+		if (moreUnreadExistInGRInterface)
+			[self setUpMarkAllAsRead];
+		else
+			[[GRMenu insertItemWithTitle:NSLocalizedString(@"Mark all as read",nil) 
+								  action:@selector(markAllAsRead:) 
+						   keyEquivalent:@"" 
+								 atIndex:endOfFeedIndex + MARK_ALL_NBO] setTarget:self];
+		[[GRMenu insertItemWithTitle:NSLocalizedString(@"Open all items",nil) 
+							  action:@selector(openAllItems:) 
+					   keyEquivalent:@"" 
+							 atIndex:endOfFeedIndex + OPEN_ALL_NBO] setTarget:self];
 		[GRMenu insertItem:[NSMenuItem separatorItem] atIndex:endOfFeedIndex + SEPARATOR2_NBO];
 		needToRemoveNormalButtons = YES;
 	}
+}
+
+- (void)setUpMainFeedItem:(NSMenuItem *)item withTitleTag:(NSString *)trimmedTitleTag sourceTag:(NSString *)trimmedSourceTag andIndex:(NSUInteger)i {
+	[item setAttributedTitle:[self makeAttributedMenuStringWithBigText:trimmedSourceTag andSmallText:trimmedTitleTag]];
+	if (![[prefs valueForKey:@"dontShowTooltips"] boolValue])
+		[item setToolTip:[NSString stringWithFormat:NSLocalizedString(@"Title: %@\nFeed: %@\nGoes to: %@%@", nil), 
+						  [titles objectAtIndex:i], [[sources objectAtIndex:i] stringValue], [links objectAtIndex:i], [summaries objectAtIndex:i]]];
+	[item setTitle:[ids objectAtIndex:i]];
+	if ([[links objectAtIndex:i] length])
+		[item setTarget:self];
+	[item setKeyEquivalentModifierMask:0];
+}
+
+- (void)setUpAlternateFeedItem:(NSMenuItem *)item withSourceTag:(NSString *)trimmedSourceTag andIndex:(NSUInteger)i {
+	if ([[prefs valueForKey:@"onOptionalActAlsoStarItem"] boolValue])
+		[item setAttributedTitle:[self makeAttributedMenuStringWithBigText:trimmedSourceTag 
+																	   andSmallText:NSLocalizedString(@"Star item and mark as read", nil)]];
+	else
+		[item setAttributedTitle:[self makeAttributedMenuStringWithBigText:trimmedSourceTag 
+																	   andSmallText:NSLocalizedString(@"Mark item as read", nil)]];
+	[item setKeyEquivalentModifierMask:NSCommandKeyMask];
+	[item setAlternate:YES];
+	// even though setting the title twice seems like doing double work, we have to, because [sender title] will always be the last set title!
+	[item setTitle:[ids objectAtIndex:i]];
+	if ([[links objectAtIndex:i] length])
+		[item setTarget:self];
 }
 
 - (void)updateFeeds {
@@ -884,38 +940,21 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[GRMenu removeItemAtIndex:--endOfFeedIndex];
 	// we loop through the results count, but we cannot go above the maxItems, even though we always fetch one row more than max
 	for (i = 0; i < [results count] && i < [[prefs valueForKey:@"maxItems"] intValue]; i++) {
-		if (![[prefs valueForKey:@"minimalFunction"] boolValue]) {
-			NSString * trimmedTitleTag = [Utilities trimDownString:[Utilities flattenHTML:[[titles objectAtIndex:i] stringValue]] withMaxLenght:60];
-			NSString * trimmedSourceTag = [Utilities trimDownString:[Utilities flattenHTML:[[sources objectAtIndex:i] stringValue]] withMaxLenght:maxLettersInSource];
-			NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
-			[item setAttributedTitle:[self makeAttributedMenuStringWithBigText:trimmedSourceTag andSmallText:trimmedTitleTag]];
-			if (![[prefs valueForKey:@"dontShowTooltips"] boolValue])
-				[item setToolTip:[NSString stringWithFormat:NSLocalizedString(@"Title: %@\nFeed: %@\nGoes to: %@%@", nil), [titles objectAtIndex:i], [[sources objectAtIndex:i] stringValue], [links objectAtIndex:i], [summaries objectAtIndex:i]]];
-			[item setTitle:[ids objectAtIndex:i]];
-			if ([[links objectAtIndex:i] length])
-				[item setTarget:self];
-			[item setKeyEquivalentModifierMask:0];			
-			[GRMenu insertItem:item atIndex:endOfFeedIndex++];
-			// and then set the alternate 
-			NSMenuItem * itemSecondary = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(doOptionalActionFromMenu:) keyEquivalent:@""];
-			if ([[prefs valueForKey:@"onOptionalActAlsoStarItem"] boolValue])
-				[itemSecondary setAttributedTitle:[self makeAttributedMenuStringWithBigText:trimmedSourceTag 
-																			   andSmallText:NSLocalizedString(@"Star item and mark as read",nil)]];
-			else
-				[itemSecondary setAttributedTitle:[self makeAttributedMenuStringWithBigText:trimmedSourceTag 
-																			   andSmallText:NSLocalizedString(@"Mark item as read",nil)]];
-			[itemSecondary setKeyEquivalentModifierMask:NSCommandKeyMask];
-			[itemSecondary setAlternate:YES];
-			// even though setting the title twice seems like doing double work, we have to, because [sender title] will always be the last set title!
-			[itemSecondary setTitle:[ids objectAtIndex:i]];
-			if ([[links objectAtIndex:i] length])
-				[itemSecondary setTarget:self];
-			[GRMenu insertItem:itemSecondary atIndex:endOfFeedIndex++];
-			[item release];
-			[itemSecondary release];
-		}
 		if (![lastIds containsObject:[ids objectAtIndex:i]]) // Growl help
 			[newItems addObject:[results objectAtIndex:i]];
+		if ([[prefs valueForKey:@"minimalFunction"] boolValue])
+			continue;
+		NSString * trimmedTitleTag = [Utilities trimDownString:[Utilities flattenHTML:[[titles objectAtIndex:i] stringValue]] withMaxLenght:60];
+		NSString * trimmedSourceTag = [Utilities trimDownString:[Utilities flattenHTML:[[sources objectAtIndex:i] stringValue]] 
+												  withMaxLenght:maxLettersInSource];
+		NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
+		[self setUpMainFeedItem:item withTitleTag:trimmedTitleTag sourceTag:trimmedSourceTag andIndex:i];
+		[GRMenu insertItem:item atIndex:endOfFeedIndex++];
+		NSMenuItem * itemAlternate = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(doOptionalActionFromMenu:) keyEquivalent:@""];
+		[self setUpAlternateFeedItem:itemAlternate withSourceTag:trimmedSourceTag andIndex:i];
+		[GRMenu insertItem:itemAlternate atIndex:endOfFeedIndex++];
+		[item release];
+		[itemAlternate release];
 	}
 }
 
@@ -987,7 +1026,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[[GRMenu itemAtIndex:indexOfPreviewFields] setEnabled:NO];
 		[GRMenu removeItemAtIndex:indexOfPreviewFields];
 	}
-	// put in the message
 	[[GRMenu itemAtIndex:CHECKNOW_FF] setAttributedTitle:[self makeAttributedMenuStringWithBigText:NSLocalizedString(@"Check Now",nil) andSmallText:message]];
 }
 
@@ -996,7 +1034,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (void)displayTopMessage:(NSString *)message {
-	// put in the message
 	[[GRMenu itemAtIndex:READER_FF] setAttributedTitle:[self makeAttributedMenuStringWithBigText:NSLocalizedString(@"Go to Reader",nil) andSmallText:message]];
 }
 
@@ -1009,7 +1046,8 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		DLog(@"Something wrong with the userNo retrieval");
 		[self displayMessage:@"no user on server"];
 		[self displayAlertWithHeader:NSLocalizedString(@"No user", nil) 
-							 andBody:NSLocalizedString(@"We cannot find your user, which is pretty strange. Report this if you are sure to be connected to the internet.", nil)];
+							 andBody:NSLocalizedString(@"We cannot find your user, which is pretty strange. "
+													   @"Report this if you are sure to be connected to the internet.", nil)];
 	}
 	return storedUserNo;
 }
@@ -1024,7 +1062,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	[self printStatus];
 	[lastIds setArray:ids];
 	[results removeAllObjects];
-	DLog(@"ids count %d >= index %d", [ids count], index);
 	if (index < [ids count]
 		&& index < [feeds count]
 		&& index < [links count]
@@ -1039,9 +1076,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[sources removeObjectAtIndex:index];
 		[summaries removeObjectAtIndex:index];
 		[torrentcastlinks removeObjectAtIndex:index];
-		//endOfFeedIndex--;
 		[self printStatus];
-		DLog(@"running updateMenu from removeOneFeedFromMenu");
 		[self updateMenu];
 	} else
 		DLog(@"Err. this and that did not match, we don't remove anything");
@@ -1061,7 +1096,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	if ([[prefs valueForKey:@"Label"] isEqualToString:@""])
 		return @"state/com.google/reading-list";
 	else
-		return [NSString stringWithFormat:@"label/%@",[prefs valueForKey:@"Label"]];
+		return [NSString stringWithFormat:@"label/%@", [prefs valueForKey:@"Label"]];
 }
 
 - (NSString *)getURLPrefix {
@@ -1106,9 +1141,9 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 - (void)announce {
 	if ([newItems count] > [[prefs stringForKey:@"maxNotifications"] integerValue]) {
-		[GrowlApplicationBridge notifyWithTitle:NSLocalizedString(@"New Unread Items",nil)
-									description:NSLocalizedString(@"Google Reader Notifier has found a number of new items.",nil)
-							   notificationName:NSLocalizedString(@"New Unread Items",nil)
+		[GrowlApplicationBridge notifyWithTitle:NSLocalizedString(@"New Unread Items", nil)
+									description:NSLocalizedString(@"Google Reader Notifier has found a number of new items.", nil)
+							   notificationName:NSLocalizedString(@"New Unread Items", nil)
 									   iconData:nil
 									   priority:0
 									   isSticky:NO
@@ -1120,7 +1155,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 			NSUInteger notifyindex = [results indexOfObjectIdenticalTo:[newItems objectAtIndex:i]];
 			[GrowlApplicationBridge notifyWithTitle:[Utilities flattenHTML:[[sources objectAtIndex:notifyindex] stringValue]] 
 										description:[Utilities flattenHTML:[[titles objectAtIndex:notifyindex] stringValue]]
-								   notificationName:NSLocalizedString(@"New Unread Items",nil)
+								   notificationName:NSLocalizedString(@"New Unread Items", nil)
 										   iconData:nil
 										   priority:0
 										   isSticky:NO
@@ -1176,10 +1211,9 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		while (path = [iter nextObject])
 			torrentCastFolderPathString = path;
 		DLog(@"TorrentCast folder selected: %@", torrentCastFolderPathString);		
-		[prefs setValue:[NSString stringWithString:torrentCastFolderPathString] forKey:@"torrentCastFolderPath"];
+		[prefs setValue:torrentCastFolderPathString forKey:@"torrentCastFolderPath"];
 		[torrentCastFolderPath setStringValue:[prefs valueForKey:@"torrentCastFolderPath"]];
 	}
-	[panel release];
 }
 
 - (void)printStatus {
