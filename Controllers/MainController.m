@@ -442,6 +442,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/token", [self getURLPrefix]];
 	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processTokenFromGoogle:) andFail:0 onTarget:self];
 	[networkManager retrieveStringAtUrl:url withDelegate:self andParam:np];
+	[np release];
 }
 
 - (void)markOneAsStarredDetached:(NSNumber *)aNumber {
