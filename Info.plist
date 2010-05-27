@@ -45,9 +45,11 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>SUFeedURL</key>
-	<string>http://feeds.feedburner.com/troelsbay-reader-appcast</string>
 	<key>SUScheduledCheckInterval</key>
 	<integer>7200</integer>
+	<key>SUFeedURL</key>
+	<string>http://www.caffeineapps.com/ReaderNotifierReloaded/sparkle_appcast.xml</string>
+	<key>SUPublicDSAKeyFile</key>
+	<string>dsa_pub.pem</string>
 </dict>
 </plist>
