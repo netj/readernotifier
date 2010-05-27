@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"  xmlns:dc="http://purl.org/dc/elements/1.1/">
+	<channel>
+		<title>Reader Notifier Reloaded</title>
+		<link>http://www.caffeineapps.com/ReaderNotifierReloaded/sparkle_appcast.xml</link>
+		<description>A Google Reader notifier that sits in your MacOSX Menu bar for easy access to all your news.</description>
+		<language>en</language>
+		
+		<item>
+			<title>Version 2.0 (* bugs fixed)</title>
+			<sparkle:releaseNotesLink>
+				http://www.caffeineapps.com/ReaderNotifierReloaded/2.0.html
+			</sparkle:releaseNotesLink>
+			<pubDate>Thu, 27 May 2010 09:45:00 +0000</pubDate>
+			<enclosure url="http://github.com/downloads/godenzim/readernotifier/Reader%20Notifier%20Reloaded_2.0.zip" sparkle:version="2.0" length="879516" type="application/octet-stream" sparkle:dsaSignature="MC4CFQDB4RDITalQHy1XyEaG8ZVMFzh+nQIVAJO5QdiL4fnXnvU0DOgCocRa7rty" />
+		</item>
+
+		<item>
+			<title>Version 1.12</title>
+			<sparkle:releaseNotesLink>
+				http://www.caffeineapps.com/ReaderNotifierReloaded/1.12.html
+			</sparkle:releaseNotesLink>
+			<pubDate>Mon, 26 Oct 2009 12:00:00 +0000</pubDate>
+			<enclosure url="http://github.com/downloads/canbuffi/readernotifier/Reader_Notifier_1.12.zip" sparkle:version="1.12" length="920992" type="application/octet-stream" sparkle:dsaSignature="C0CFQDIq9TpcYXoxM/+gEhfGTo6GmvKXQIUDWhCxUUWaOJYTQcvQWJMuKuhFHA=" />
+		</item>
+
+	</channel>
+</rss>
