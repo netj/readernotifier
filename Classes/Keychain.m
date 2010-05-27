@@ -1,25 +1,34 @@
+// Copyright (C) 2010 Mike Godenzi, Claudio Marforio
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 //
 //  Keychain.m
 //  Google Reader
 //
 //  Created by Troels Bay on 2006-11-14.
-//  Copyright 2006 __MyCompanyName__. All rights reserved.
+//  Copyright 2006. All rights reserved.
 //
 
 #import "Keychain.h"
 
-#import <Cocoa/Cocoa.h>
 #import <Security/Security.h>
 #import <CoreFoundation/CoreFoundation.h>
 
 @implementation Keychain
 
-
-
-
-
-+ (BOOL)checkForExistanceOfKeychain
-{
++ (BOOL)checkForExistanceOfKeychain {
 	SecKeychainSearchRef search;
 	SecKeychainItemRef item;
 	// SecKeychainAttributeList list;
@@ -46,11 +55,10 @@
 	
     result = SecKeychainSearchCreateFromAttributes(NULL, kSecGenericPasswordItemClass, &list, &search);
 	
-    if (result != noErr) {
+    if (result != noErr)
         NSLog (@"status %d from SecKeychainSearchCreateFromAttributes\n", result);
-    }
     
-	while (SecKeychainSearchCopyNext (search, &item) == noErr) {
+	while (SecKeychainSearchCopyNext(search, &item) == noErr) {
         CFRelease (item);
         numberOfItemsFound++;
     }
@@ -62,8 +70,7 @@
 
 
 // we're not really using this, though
-+ (BOOL)deleteKeychainItem
-{
++ (BOOL)deleteKeychainItem {
 	SecKeychainAttribute attributes[3];
     SecKeychainAttributeList list;
     SecKeychainItemRef item;
@@ -88,24 +95,19 @@
     list.attr = attributes;
 	
 	result = SecKeychainSearchCreateFromAttributes(NULL, kSecGenericPasswordItemClass, &list, &search);
-	while (SecKeychainSearchCopyNext (search, &item) == noErr) {
+	while (SecKeychainSearchCopyNext (search, &item) == noErr)
         numberOfItemsFound++;
-    }
-	if (numberOfItemsFound) {
+	if (numberOfItemsFound)
 		status = SecKeychainItemDelete(item);
-	}
 	
-    if (status != 0) {
+    if (status != 0)
         NSLog(@"Error deleting item: %d\n", (int)status);
-    }
 	CFRelease (item);
 	CFRelease(search);
 	return !status;
 }
 
-+ (BOOL)modifyKeychainItem:(NSString *)newPassword
-{
-
++ (BOOL)modifyKeychainItem:(NSString *)newPassword {
 	SecKeychainAttribute attributes[3];
     SecKeychainAttributeList list;
     SecKeychainItemRef item;
@@ -132,9 +134,8 @@
 	SecKeychainSearchCopyNext (search, &item);
     status = SecKeychainItemModifyContent(item, &list, [newPassword length], [newPassword UTF8String]);
 	
-    if (status != 0) {
+    if (status != 0)
         NSLog(@"Error modifying item: %d", (int)status);
-    }
 	CFRelease (item);
 	CFRelease(search);
 	return !status;
@@ -142,8 +143,7 @@
 
 
 
-+ (BOOL)addKeychainItem:(NSString *)password
-{
++ (BOOL)addKeychainItem:(NSString *)password {
 
 	SecKeychainAttribute attributes[3];
     SecKeychainAttributeList list;
@@ -166,14 +166,12 @@
     list.attr = attributes;
 		
     status = SecKeychainItemCreateFromContent(kSecGenericPasswordItemClass, &list, [password length], [password UTF8String], NULL,NULL,&item);
-    if (status != 0) {
+    if (status != 0)
         NSLog(@"Error creating new item: %d\n", (int)status);
-    }
 	return !status;
 }
 
-+ (NSString *)getPassword
-{
++ (NSString *)getPassword {
     SecKeychainSearchRef search;
     SecKeychainItemRef item;
 //    SecKeychainAttributeList list;
@@ -199,9 +197,8 @@
 	
     result = SecKeychainSearchCreateFromAttributes(NULL, kSecGenericPasswordItemClass, &list, &search);
 	
-    if (result != noErr) {
+    if (result != noErr)
         NSLog (@"status %d from SecKeychainSearchCreateFromAttributes\n", result);
-    }
 	
 	NSString *password = @"";
     if (SecKeychainSearchCopyNext (search, &item) == noErr) {
@@ -214,8 +211,7 @@
 }
 
 
-+ (NSString *)getUsernameFromSecKeychainItemRef:(SecKeychainItemRef)item
-{
++ (NSString *)getUsernameFromSecKeychainItemRef:(SecKeychainItemRef)item {
     UInt32 length;
 	
 	SecKeychainAttribute attributes[8];
@@ -250,9 +246,8 @@
 		// it out with printf
 		char buffer[1024];
 		
-		if (length > 1023) {
+		if (length > 1023)
 			length = 1023; // save room for trailing \0
-		}
 
 		
 		strncpy (buffer, attributes[0].data, attributes[0].length);
@@ -262,10 +257,7 @@
 		return [NSString stringWithCString:buffer];
 		
 		SecKeychainItemFreeContent (&list, buffer);
-
-		
 	} else {
-		
 		printf("Error = %d\n", (int)status);
 		return @"";
 	}
@@ -273,8 +265,7 @@
 
 
 
-+ (NSString *)getPasswordFromSecKeychainItemRef:(SecKeychainItemRef)item
-{
++ (NSString *)getPasswordFromSecKeychainItemRef:(SecKeychainItemRef)item {
     UInt32 length;
     char *password;
     SecKeychainAttribute attributes[8];
@@ -320,19 +311,14 @@
 			// return [NSString stringWithCString:passwordBuffer];
 			returnedPass = [NSString stringWithCString:passwordBuffer];
         }
-		
         SecKeychainItemFreeContent (&list, password);
-		
     } else {
         printf("Error = %d\n", (int)status);
 		
 		// return @"";
 		returnedPass = @"";
     }
-	
 	return returnedPass;
-	
 }
-
 
 @end
