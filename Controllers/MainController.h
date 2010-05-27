@@ -129,5 +129,7 @@
 - (IBAction)openAddFeedWindow:(id)sender;
 - (IBAction)addFeedFromUI:(id)sender;
 - (IBAction)selectTorrentCastFolder:(id)sender;
+- (IBAction)gitHubButtonPressed:(id)sender;
+- (IBAction)blogButtonPressed:(id)sender;
 
 @end

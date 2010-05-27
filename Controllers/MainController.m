@@ -144,17 +144,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 - (void)awakeFromNib {
 	[NSApp activateIgnoringOtherApps:YES];
-	// Get system version
-	NSDictionary * dict = [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
-	NSString * versionString = [dict objectForKey:@"ProductVersion"];
-	NSArray * array = [versionString componentsSeparatedByString:@"."];
-	NSUInteger count = [array count];
-	NSInteger major = (count >= 1) ? [[array objectAtIndex:0] integerValue] : 0;
-	NSInteger minor = (count >= 2) ? [[array objectAtIndex:1] integerValue] : 0;
-	if (major > 10 || major == 10 && minor >= 5)
-		isLeopard = YES;
-	else
-		isLeopard = NO;
 	// Growl
 	[GrowlApplicationBridge setGrowlDelegate:self];
 	[prefs setObject:@"" forKey:@"storedSID"];
@@ -216,6 +205,14 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 #pragma mark -
 #pragma mark IBAction methods
+
+- (IBAction)gitHubButtonPressed:(id)sender {
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://github.com/godenzim/readernotifier"]];
+}
+
+- (IBAction)blogButtonPressed:(id)sender {
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://www.cloudgoessocial.net/"]];
+}
 
 - (IBAction)checkNow:(id)sender {	
 	// first we check if the user has put in a password and username beforehand
