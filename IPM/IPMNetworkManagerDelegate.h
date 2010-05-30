@@ -27,6 +27,11 @@
 @optional
 
 /*
+ * This method is called by the IPMNetworkManager when a request for a JSON object has finished
+ */
+- (void)networkManagerDidReceiveJSONResponse:(id)jsonItem withParam:(id<NSObject>)param;
+
+/*
  * This method is called by the IPMNetworkManager when a request for a NSString object has finished
  */
 - (void)networkManagerDidReceiveNSStringResponse:(NSString *)response withParam:(id<NSObject>)param;

@@ -1,4 +1,4 @@
-// Copyright (C) 2010 Claudio Marforio
+// Copyright (C) 2010 Mike Godenzi
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,22 +14,33 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 //
-//  Utilities.h
+//  Feed.h
 //  Reader Notifier
 //
-//  Created by Claudio Marforio on 5/22/10.
-//  Copyright 2010 www.cloudgoessocial.net. All rights reserved.
+//  Created by Mike Godenzi on 5/28/10.
+//  Copyright 2010 Mike Godenzi. All rights reserved.
 //
 
 #import <Cocoa/Cocoa.h>
 
 
-@interface Utilities : NSObject {
-
+@interface Feed : NSObject {
+	@private
+	NSString * feedUrl;
+	NSString * feedId;
+	NSString * link;
+	NSString * title;
+	NSString * source;
+	NSString * summary;
+	NSString * torrentcastLink;
 }
 
-+ (NSString *)flattenHTML:(NSString *)stringToFlatten;
-+ (NSString *)trimDownString:(NSString *)stringToTrim withMaxLenght:(NSInteger)maxLength;
-+ (NSString *)replaceMultiSpacesWithSingleSpace:(NSString *)s;
+@property(nonatomic, retain) NSString * feedUrl;
+@property(nonatomic, retain) NSString * feedId;
+@property(nonatomic, retain) NSString * link;
+@property(nonatomic, retain) NSString * title;
+@property(nonatomic, retain) NSString * source;
+@property(nonatomic, retain) NSString * summary;
+@property(nonatomic, retain) NSString * torrentcastLink;
 
 @end

@@ -7,7 +7,20 @@
 		<language>en</language>
 		
 		<item>
-			<title>Version 2.0 (* bugs fixed)</title>
+			<title>Version 2.1</title>
+			<sparkle:releaseNotesLink>http://www.caffeineapps.com/ReaderNotifierReloaded/2.1.html</sparkle:releaseNotesLink>
+			<pubDate>Sun, 30 May 2010 16:05:09 +0200</pubDate>
+			<enclosure
+				url="http://github.com/godenzim/readernotifier/Reader Notifier Reloaded_2.1.zip"
+				sparkle:version="2.1"
+				type="application/octet-stream"
+				length="903846"
+				sparkle:dsaSignature="MjI4NTdhZmZhMjI2OGU3OTk3MzE5Mjk5MjQ3ZDRkY2UxNjc2NDUxNgo="
+			/>
+		</item>
+		
+		<item>
+			<title>Version 2.0</title>
 			<sparkle:releaseNotesLink>
 				http://www.caffeineapps.com/ReaderNotifierReloaded/2.0.html
 			</sparkle:releaseNotesLink>

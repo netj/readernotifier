@@ -55,6 +55,16 @@
 				  andParam:(id<NSObject>)param;
 
 /*
+ * This method is used to retrieve a Json object.
+ * - url: the request url
+ * - delegate: when the image is downloaded, the method networkManagerDidReceiveJSONResponse:withParam: will be called on the delegate
+ * - param: this object will be passed back with the reponse callback, it can be used to distinguish between several request, it can be nil
+ */
+- (void)retrieveJsonAtUrl:(NSString *)url
+			 withDelegate:(id<IPMNetworkManagerDelegate>)delegate 
+				 andParam:(id<NSObject>)param;
+
+/*
  * This method is used to retrieve a NSString object.
  * - url: the request url
  * - enc: the encoding type

@@ -24,13 +24,16 @@
 #import <Cocoa/Cocoa.h>
 
 int main(int argc, char *argv[]) {
-
-	id pool = [NSAutoreleasePool new];
-
-	NSString *logPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Logs/ReaderNotifierDebug.log"];
-	freopen([logPath fileSystemRepresentation], "a", stderr);
-
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+#ifndef DEBUG
+	NSString * logPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Logs/ReaderNotifierDebug.log"];
+	FILE * f = freopen([logPath fileSystemRepresentation], "a", stderr);
+#endif
+	DLog(@"@============== READER NOTIFIER RELOADED ==============@");
+	int retVal = NSApplicationMain(argc, (const char **)argv);
+#ifndef DEBUG
+	fclose(f);
+#endif
 	[pool release];
-	
-    return NSApplicationMain(argc, (const char **)argv);
+    return retVal;
 }

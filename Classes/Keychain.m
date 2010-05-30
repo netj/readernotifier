@@ -254,7 +254,7 @@
 		
 		
 		buffer[attributes[0].length] = '\0';
-		return [NSString stringWithCString:buffer];
+		return [NSString stringWithCString:buffer encoding:NSUTF8StringEncoding];
 		
 		SecKeychainItemFreeContent (&list, buffer);
 	} else {
@@ -309,7 +309,7 @@
 			//printf ("passwordBuffer = %s\n", passwordBuffer);
 			
 			// return [NSString stringWithCString:passwordBuffer];
-			returnedPass = [NSString stringWithCString:passwordBuffer];
+			returnedPass = [NSString stringWithCString:passwordBuffer encoding:NSUTF8StringEncoding];
         }
         SecKeychainItemFreeContent (&list, password);
     } else {

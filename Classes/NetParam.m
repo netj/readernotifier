@@ -49,7 +49,6 @@
 }
 
 - (void)invokeSuccessWithFirstParam:(id)firstParam {
-	DLog(@"INVOKING WITH SECOND PARAM: %@", [secondParam description]);
 	[target performSelector:successMethod withObject:firstParam withObject:secondParam];
 }
 

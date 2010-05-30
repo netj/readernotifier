@@ -24,6 +24,7 @@
 
 #import "IPMNetworkManager.h"
 #import "IPMPendingConnection.h"
+#import "JSON.h"
 
 @interface IPMNetworkManager (PrivateMethods)
 - (void)sendGETNetworkRequest:(NSString *)urlrequest withPendingConnection:(IPMPendingConnection *)pc;
@@ -34,6 +35,7 @@
 - (IPMPendingConnection *)getPendingConnection:(NSURLConnection *)connection;
 - (NSString *)generateKeyForConnection:(NSURLConnection *)connection;
 - (void)destroyDataforConnection:(NSURLConnection *)connection;
+- (void)processJSONResponseForPendingConnection:(IPMPendingConnection *)pc;
 - (void)processNSStringResponseForPendingConnection:(IPMPendingConnection *)pc;
 - (void)processNSImageResponseForPendingConnection:(IPMPendingConnection *)pc;
 - (void)processNSDataResponseForPendingConnection:(IPMPendingConnection *)pc;
@@ -80,7 +82,11 @@
 }
 
 - (void)retrieveImageAtUrl:(NSString *)imageUrl withDelegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
-	[self sendGETNetworkRequest:imageUrl withResponseType:NSImage_NRT delegate:delegate andParam:param];
+	[self sendGETNetworkRequest:imageUrl withResponseType:NSIMAGE_NRT delegate:delegate andParam:param];
+}
+
+- (void)retrieveJsonAtUrl:(NSString *)url withDelegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:url withResponseType:JSON_NRT delegate:delegate andParam:param];
 }
 
 - (void)retrieveStringAtUrl:(NSString *)url withDelegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
@@ -128,7 +134,8 @@
 -(void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge {
 	DLog(@"CHALLENGE RECEIVED");
 	IPMPendingConnection * pc = [self getPendingConnection:connection];
-	if (![pc.delegate respondsToSelector:@selector(usernameForAuthenticationChallengeWithParam:)] || ![pc.delegate respondsToSelector:@selector(passwordForAuthenticationChallengeWithParam:)])
+	if (![pc.delegate respondsToSelector:@selector(usernameForAuthenticationChallengeWithParam:)] 
+		|| ![pc.delegate respondsToSelector:@selector(passwordForAuthenticationChallengeWithParam:)])
 		return;
 	
 	if ([challenge previousFailureCount] == 0) {
@@ -162,14 +169,17 @@
 		return;
 	}
 	switch (pc.nrt) {
-		case NSImage_NRT:
-			[self processNSImageResponseForPendingConnection:pc];
+		case JSON_NRT:
+			[self processJSONResponseForPendingConnection:pc];
 			break;
 		case NSSTRING_NRT:
 			[self processNSStringResponseForPendingConnection:pc];
 			break;
 		case NSDATA_NRT:
 			[self processNSDataResponseForPendingConnection:pc];
+			break;
+		case NSIMAGE_NRT:
+			[self processNSImageResponseForPendingConnection:pc];
 			break;
 		default:
 			break;
@@ -179,6 +189,14 @@
 }
 
 #pragma mark Response Processing
+
+- (void)processJSONResponseForPendingConnection:(IPMPendingConnection *)pc {
+	NSString * readableString = [[NSString alloc] initWithData:pc.receivedData encoding:pc.encoding];
+	id jsonItem = [readableString JSONValue];
+	if ([pc.delegate respondsToSelector:@selector(networkManagerDidReceiveJSONResponse:withParam:)])
+		[pc.delegate networkManagerDidReceiveJSONResponse:jsonItem withParam:pc.param];
+	[readableString release];
+}
 
 - (void)processNSStringResponseForPendingConnection:(IPMPendingConnection *)pc {
 	NSString * readableString = [[NSString alloc] initWithData:pc.receivedData encoding:pc.encoding];
@@ -195,7 +213,6 @@
 }
 
 - (void)processNSDataResponseForPendingConnection:(IPMPendingConnection *)pc {
-	DLog(@"PROCESSING NSDATA");
 	if ([pc.delegate respondsToSelector:@selector(networkManagerDidReceiveNSDataResponse:withParam:)])
 		[pc.delegate networkManagerDidReceiveNSDataResponse:pc.receivedData withParam:pc.param];
 }

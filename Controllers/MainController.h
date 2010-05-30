@@ -25,10 +25,12 @@
 #import <Cocoa/Cocoa.h>
 #import <Growl/Growl.h>
 #import <IOKit/IOKitLib.h>
+#import <Sparkle/Sparkle.h>
 #import "IPMNetworkManagerDelegate.h"
 
 @class IPMNetworkManager;
 @class NetParam;
+@class Feed;
 
 @interface MainController : NSObject<GrowlApplicationBridgeDelegate, IPMNetworkManagerDelegate> {
     IBOutlet NSSecureTextField * passwordField;
@@ -38,24 +40,17 @@
 	IBOutlet NSMenu * GRMenu;
 	IBOutlet NSWindow * preferences; //preference window
 	IBOutlet NSWindow * addfeedwindow; //addfeed window
+	IBOutlet SUUpdater * updater;
+	IBOutlet NSTextField * versionLabel;
 	
-    NSTimer * mainTimer;
 	NSTimer * lastCheckTimer;
 	
 	NSStatusItem * statusItem;
 	NSUserDefaults * prefs;
 	
-	NSMutableArray * titles;
-	NSMutableArray * sources;
-	NSMutableArray * user;
-	NSMutableArray * links;
-	NSMutableArray * ids;
-	NSMutableArray * feeds;	
-	NSMutableArray * summaries;	
-	NSMutableArray * torrentcastlinks;
-	NSMutableArray * results;
-	NSMutableArray * lastIds;
-	NSMutableArray * newItems;
+	NSMutableArray * feeds;
+	NSMutableArray * oldFeeds;
+	NSMutableArray * newFeeds;
 	NSDictionary * normalAttrsDictionary;
 	NSDictionary * smallAttrsDictionary;
 	
@@ -63,7 +58,6 @@
 	NSString * torrentCastFolderPathString;
 	NSString * currentToken;
 	
-	NSSound * theSound;
 	NSImage * unreadItemsImage;
 	NSImage * highlightedImage;
 	NSImage * nounreadItemsImage;
@@ -72,7 +66,6 @@
 	IPMNetworkManager * networkManager;
 	
 	BOOL isLeopard;
-	BOOL currentlyFetchingAndUpdating;
 	BOOL moreUnreadExistInGRInterface;
 	BOOL needToRemoveNormalButtons;
 	
@@ -87,15 +80,11 @@
 - (void)addFeed:(NSString *)url;
 - (void)displayAlertWithHeader:(NSString *)headerText andBody:(NSString *)bodyText;
 - (void)displayMessage:(NSString *)message;
-- (NSString *)grabUserNo;
-- (NSString *)loginToGoogle;
+- (void)loginToGoogle;
 - (void)getTokenFromGoogle;
-- (void)removeOneFeedFromMenu:(NSInteger)index;
-- (void)timer:(NSTimer *)timer;
 - (void)getUnreadCountWithDeferredCall:(NetParam *)dc;
 - (void)retrieveGoogleFeed;
 - (void)updateMenu;
-- (void)setTimeDelay:(NSInteger)x;
 - (NSString *)getLabel;
 - (void)errorImageOn;
 - (NSString *)getURLPrefix;
@@ -110,18 +99,17 @@
 - (void)displayTopMessage:(NSString *)message;
 - (void)lastTimeCheckedTimer:(NSTimer *)timer;
 - (void)selectTorrentCastFolderEnded:(NSOpenPanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo;
-- (void)checkNowWithDelayDetached:(NSNumber *)delay;
-- (void)markResultsAsReadDetached;
-- (void)markOneAsReadDetached:(NSNumber *)aNumber;
-- (void)markAllAsReadDetached;
-- (void)markOneAsStarredDetached:(NSNumber *)aNumber;
+- (void)markOneAsRead:(Feed *)f;
+- (void)markAllAsReadDeferred;
+- (void)markOneAsStarred:(Feed *)f;
 - (void)awakenFromSleep;
 
 
 - (IBAction)launchSite:(id)sender;
 - (IBAction)markAllAsRead:(id)sender;
 - (IBAction)launchLink:(id)sender;
-- (IBAction)doOptionalActionFromMenu:(id)sender;
+- (IBAction)doCommandActionFromMenu:(id)sender;
+- (IBAction)doShiftActionFromMenu:(id)sender;
 - (IBAction)launchErrorHelp:(id)sender;
 - (IBAction)checkGoogleAuth:(id)sender;
 - (IBAction)openPrefs:(id)sender;

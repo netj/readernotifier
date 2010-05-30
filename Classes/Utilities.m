@@ -27,23 +27,46 @@
 @implementation Utilities
 
 + (NSString *)flattenHTML:(NSString *)stringToFlatten {
+	if (!stringToFlatten)
+		return stringToFlatten;
+	NSScanner * theScanner;
+    NSString * text = nil;
+    theScanner = [[NSScanner alloc] initWithString:stringToFlatten];
+    while (![theScanner isAtEnd]) {
+        [theScanner scanUpToString:@"<" intoString:NULL] ; 
+        [theScanner scanUpToString:@">" intoString:&text] ;
+		NSString * replacement;
+		if ([text hasPrefix:@"<br"])
+			replacement = @"\n";
+		else
+			replacement = @" ";
+        stringToFlatten = [stringToFlatten stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"%@>", text] withString:replacement];
+    } // while //
+	[theScanner release];
 	stringToFlatten = [stringToFlatten stringByReplacingOccurrencesOfString:@"&quot;" withString:@"\""];
 	stringToFlatten = [stringToFlatten stringByReplacingOccurrencesOfString:@"&amp;" withString:@"&"];
 	stringToFlatten = [stringToFlatten stringByReplacingOccurrencesOfString:@"&#39;" withString:@"'"];
+	stringToFlatten = [Utilities replaceMultiSpacesWithSingleSpace:stringToFlatten];
+	stringToFlatten = [stringToFlatten stringByReplacingOccurrencesOfString:@"\n " withString:@"\n"];
 	return stringToFlatten;
 }
 
-+ (NSMutableArray *)reverseArray:(NSMutableArray *)array {
-	NSUInteger i = 0;
-	for (i = 0; i < (floor([array count]/2.0)); i++)
-		[array exchangeObjectAtIndex:i withObjectAtIndex:([array count]-(i+1))];
-	return array;
++ (NSString *)replaceMultiSpacesWithSingleSpace:(NSString *)s {
+	while (YES) {
+		NSRange r = [s rangeOfString:@"  "];
+		if (r.location == NSNotFound)
+			break;
+		s = [s stringByReplacingOccurrencesOfString:@"  " withString:@" "];
+	}
+	return s;
 }
 
 + (NSString *)trimDownString:(NSString *)stringToTrim withMaxLenght:(NSInteger)maxLength {
-	int initialLengthOfString = [stringToTrim length];
-	stringToTrim = [stringToTrim substringToIndex:MIN(maxLength,[stringToTrim length])];
-	// if we made a trim down, we add a couple of dots
+	if (maxLength >= [stringToTrim length])
+		return stringToTrim;
+	NSUInteger initialLengthOfString = [stringToTrim length];
+	stringToTrim = [stringToTrim substringToIndex:maxLength];
+	// if we made a trim down, we add 3 dots
 	if (initialLengthOfString > maxLength)
 		stringToTrim = [stringToTrim stringByAppendingString:@"..."];
 	return stringToTrim;
