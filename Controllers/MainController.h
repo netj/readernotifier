@@ -53,8 +53,8 @@
 	NSMutableArray * newFeeds;
 	NSDictionary * normalAttrsDictionary;
 	NSDictionary * smallAttrsDictionary;
+	NSDictionary * cookieHeader;
 	
-	NSString * storedSID;
 	NSString * torrentCastFolderPathString;
 	NSString * currentToken;
 	
@@ -68,6 +68,7 @@
 	BOOL isLeopard;
 	BOOL moreUnreadExistInGRInterface;
 	BOOL needToRemoveNormalButtons;
+	BOOL isCheckingCredential;
 	
 	NSInteger totalUnreadCount;
 	NSInteger lastCheckMinute;

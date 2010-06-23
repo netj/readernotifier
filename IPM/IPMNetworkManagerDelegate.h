@@ -37,9 +37,9 @@
 - (void)networkManagerDidReceiveNSStringResponse:(NSString *)response withParam:(id<NSObject>)param;
 
 /*
- * This method is called by the IPMNetworkManager when a request for a NSImage object has finished
+ * This method is called by the IPMNetworkManager when a request for a UIImage object has finished
  */
-- (void)networkManagerDidReceiveNSImageResponse:(NSImage *)response withParam:(id<NSObject>)param;
+- (void)networkManagerDidReceiveUIImageResponse:(NSImage *)response withParam:(id<NSObject>)param;
 
 /*
  * This method is called by the IPMNetworkManager when a request has finished
@@ -60,5 +60,4 @@
  * This method is called by the IPMNetworkManager when an authentication challenge araise
  */
 - (NSString *)passwordForAuthenticationChallengeWithParam:(id<NSObject>)param;
-
 @end

@@ -24,27 +24,52 @@
 
 #import "IPMNetworkManager.h"
 #import "IPMPendingConnection.h"
+#import "IPMNetworkManagerDelegate.h"
 #import "JSON.h"
 
 @interface IPMNetworkManager (PrivateMethods)
-- (void)sendGETNetworkRequest:(NSString *)urlrequest withPendingConnection:(IPMPendingConnection *)pc;
-- (void)sendPOSTNetworkRequest:(NSString *)urlrequest withBody:(NSData *)requestBody andPendingConnection:(IPMPendingConnection *)pc;
-- (void)sendNetworkRequest:(NSURLRequest *)request withPendingConnection:(IPMPendingConnection *)pc;
+- (void)execNetworkRequest:(NSString *)urlrequest 
+				withMethod:(NSString *)method 
+			  headerFields:(NSDictionary *)headers 
+					  body:(NSData *)requestBody 
+	  andPendingConnection:(IPMPendingConnection *)pc;
+
+- (void)sendJSONNetworkRequest:(NSString *)url 
+					withMethod:(NSString *)method
+					  JSONBody:(NSDictionary *)body 
+				  headerFields:(NSDictionary *)headers 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					  andParam:(id<NSObject>)param;
+
+- (void)sendNetworkRequest:(NSURLRequest *)request 
+	 withPendingConnection:(IPMPendingConnection *)pc;
+
 - (NSMutableData *)getDataForConnection:(NSURLConnection *)connection;
+
 - (id<IPMNetworkManagerDelegate>)getDelegateForConnection:(NSURLConnection *)connection;
+
 - (IPMPendingConnection *)getPendingConnection:(NSURLConnection *)connection;
+
 - (NSString *)generateKeyForConnection:(NSURLConnection *)connection;
+
 - (void)destroyDataforConnection:(NSURLConnection *)connection;
+
 - (void)processJSONResponseForPendingConnection:(IPMPendingConnection *)pc;
+
 - (void)processNSStringResponseForPendingConnection:(IPMPendingConnection *)pc;
-- (void)processNSImageResponseForPendingConnection:(IPMPendingConnection *)pc;
+
+- (void)processUIImageResponseForPendingConnection:(IPMPendingConnection *)pc;
+
 - (void)processNSDataResponseForPendingConnection:(IPMPendingConnection *)pc;
+
+- (void)addHeaders:(NSDictionary *)headers toRequest:(NSMutableURLRequest *)request;
 @end
 
 
 @implementation IPMNetworkManager
 
-@synthesize userAgent, sid;
+@synthesize userAgent;
 
 #pragma mark Memory Management
 
@@ -52,13 +77,11 @@
 	if (self = [super init]) {
 		connectionsData = [[NSMutableDictionary alloc] init];
 		userAgent = nil;
-		sid = nil;
 	}
 	return self;
 }
 
 - (void)dealloc {
-	[sid release];
 	[userAgent release];
 	[connectionsData release];
 	[super dealloc];
@@ -66,57 +89,196 @@
 
 #pragma mark Request Methods
 
-- (void)sendGETNetworkRequest:(NSString *)url withResponseType:(IPM_NETWORK_RESPONSE_TYPE)type delegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
+- (void)sendGETNetworkRequest:(NSString *)url 
+			 withHeaderFields:(NSDictionary *)headers 
+				 responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					 andParam:(id<NSObject>)param {
 	IPMPendingConnection * pc = [[IPMPendingConnection alloc] initWithDelegate:delegate andParam:param];
 	pc.nrt = type;
-	[self sendGETNetworkRequest:url withPendingConnection:pc];
+	[self execNetworkRequest:url withMethod:@"GET" headerFields:headers body:nil andPendingConnection:pc];
 	[pc release];
 }
 
-- (void)sendPOSTNetworkRequest:(NSString *)url withBody:(NSString *)body withResponseType:(IPM_NETWORK_RESPONSE_TYPE)type delegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
+- (void)sendGETNetworkRequest:(NSString *)url 
+			 withResponseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					 andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:url withHeaderFields:nil responseType:type delegate:delegate andParam:param];
+}
+
+- (void)sendPOSTNetworkRequest:(NSString *)url 
+					  withBody:(NSString *)body 
+				  headerFields:(NSDictionary *)headers 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					  andParam:(id<NSObject>)param {
 	IPMPendingConnection * pc = [[IPMPendingConnection alloc] initWithDelegate:delegate andParam:param];
 	pc.nrt = type;
 	NSData * bodyData = [body dataUsingEncoding:NSUTF8StringEncoding];
-	[self sendPOSTNetworkRequest:url withBody:bodyData andPendingConnection:pc];
+	[self execNetworkRequest:url withMethod:@"POST" headerFields:headers body:bodyData andPendingConnection:pc];
 	[pc release];
 }
 
-- (void)retrieveImageAtUrl:(NSString *)imageUrl withDelegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
-	[self sendGETNetworkRequest:imageUrl withResponseType:NSIMAGE_NRT delegate:delegate andParam:param];
+- (void)sendPOSTNetworkRequest:(NSString *)url 
+					  withBody:(NSString *)body 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					  andParam:(id<NSObject>)param {
+	[self sendPOSTNetworkRequest:url withBody:body headerFields:nil responseType:type delegate:delegate andParam:param];
 }
 
-- (void)retrieveJsonAtUrl:(NSString *)url withDelegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
-	[self sendGETNetworkRequest:url withResponseType:JSON_NRT delegate:delegate andParam:param];
+- (void)sendPOSTNetworkRequest:(NSString *)url 
+				  withJSONBody:(NSDictionary *)body 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					  andParam:(id<NSObject>)param {
+	[self sendPOSTNetworkRequest:url withJSONBody:body headerFields:nil responseType:type delegate:delegate andParam:param];
 }
 
-- (void)retrieveStringAtUrl:(NSString *)url withDelegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
-	[self sendGETNetworkRequest:url withResponseType:NSSTRING_NRT delegate:delegate andParam:param];
+- (void)sendPOSTNetworkRequest:(NSString *)url 
+				  withJSONBody:(NSDictionary *)body 
+				  headerFields:(NSDictionary *)headers 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					  andParam:(id<NSObject>)param {
+	[self sendJSONNetworkRequest:url withMethod:@"POST" JSONBody:body headerFields:headers responseType:type delegate:delegate andParam:param];
 }
 
-- (void)retrieveStringAtUrl:(NSString *)url withEncoding:(NSStringEncoding)enc andDelegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
+- (void)sendPUTNetworkRequest:(NSString *)url 
+					 withBody:(NSString *)body 
+				 headerFields:(NSDictionary *)headers 
+				 responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					 andParam:(id<NSObject>)param {
+	IPMPendingConnection * pc = [[IPMPendingConnection alloc] initWithDelegate:delegate andParam:param];
+	pc.nrt = type;
+	NSData * bodyData = [body dataUsingEncoding:NSUTF8StringEncoding];
+	[self execNetworkRequest:url withMethod:@"PUT" headerFields:headers body:bodyData andPendingConnection:pc];
+	[pc release];
+}
+
+- (void)sendPUTNetworkRequest:(NSString *)url 
+				 withJSONBody:(NSDictionary *)body 
+				 headerFields:(NSDictionary *)headers 
+				 responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					 andParam:(id<NSObject>)param {
+	[self sendJSONNetworkRequest:url withMethod:@"PUT" JSONBody:body headerFields:headers responseType:type delegate:delegate andParam:param];
+}
+
+- (void)sendJSONNetworkRequest:(NSString *)url 
+					withMethod:(NSString *)method
+					  JSONBody:(NSDictionary *)body 
+				  headerFields:(NSDictionary *)headers 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					  andParam:(id<NSObject>)param {
+	IPMPendingConnection * pc = [[IPMPendingConnection alloc] initWithDelegate:delegate andParam:param];
+	pc.nrt = type;
+	NSString * bodyString = [body JSONRepresentation];
+	NSData * bodyData = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
+	NSMutableDictionary * allHeaders;
+	if (headers) {
+		allHeaders = [NSMutableDictionary dictionaryWithDictionary:headers];
+		[allHeaders setObject:@"application/json" forKey:@"Content-Type"];
+	} else
+		allHeaders = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"application/json", @"Content-Type", nil];
+	[self execNetworkRequest:url withMethod:method headerFields:allHeaders body:bodyData andPendingConnection:pc];
+	[pc release];
+}
+
+- (void)sendNetworkRequest:(NSString *)url 
+				withMethod:(NSString *)method
+					  body:(NSData *)body 
+			  headerFields:(NSDictionary *)headers 
+			  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+				  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				  andParam:(id<NSObject>)param {
+	IPMPendingConnection * pc = [[IPMPendingConnection alloc] initWithDelegate:delegate andParam:param];
+	pc.nrt = type;
+	[self execNetworkRequest:url withMethod:method headerFields:headers body:body andPendingConnection:pc];
+	[pc release];
+}
+
+- (void)retrieveImageAtUrl:(NSString *)imageUrl 
+		  withHeaderFields:(NSDictionary *)headers 
+				  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				  andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:imageUrl withHeaderFields:headers responseType:NSIMAGE_NRT delegate:delegate andParam:param];
+}
+
+- (void)retrieveImageAtUrl:(NSString *)imageUrl 
+			  withDelegate:(id<IPMNetworkManagerDelegate>)delegate 
+				  andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:imageUrl withHeaderFields:nil responseType:NSIMAGE_NRT delegate:delegate andParam:param];
+}
+
+- (void)retrieveJsonAtUrl:(NSString *)url 
+		 withHeaderFields:(NSDictionary *)headers 
+				 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				 andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:url withHeaderFields:headers responseType:JSON_NRT delegate:delegate andParam:param];
+}
+
+- (void)retrieveJsonAtUrl:(NSString *)url 
+			 withDelegate:(id<IPMNetworkManagerDelegate>)delegate 
+				 andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:url withHeaderFields:nil responseType:JSON_NRT delegate:delegate andParam:param];
+}
+
+- (void)retrieveStringAtUrl:(NSString *)url 
+		   withHeaderFields:(NSDictionary *)headers
+				   delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				   andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:url withHeaderFields:headers responseType:NSSTRING_NRT delegate:delegate andParam:param];
+}
+
+- (void)retrieveStringAtUrl:(NSString *)url 
+			   withDelegate:(id<IPMNetworkManagerDelegate>)delegate 
+				   andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:url withHeaderFields:nil responseType:NSSTRING_NRT delegate:delegate andParam:param];
+}
+
+- (void)retrieveStringAtUrl:(NSString *)url 
+		   withHeaderFields:(NSDictionary *)headers
+				   encoding:(NSStringEncoding)enc 
+				   delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				   andParam:(id<NSObject>)param {
 	IPMPendingConnection * pc = [[IPMPendingConnection alloc] initWithDelegate:delegate andParam:param];
 	pc.nrt = NSSTRING_NRT;
 	pc.encoding = enc;
-	[self sendGETNetworkRequest:url withPendingConnection:pc];
+	[self execNetworkRequest:url withMethod:@"GET" headerFields:headers body:nil andPendingConnection:pc];
 	[pc release];
 }
 
-- (void)retrieveDataAtUrl:(NSString *)url withDelegate:(id<IPMNetworkManagerDelegate>)delegate andParam:(id<NSObject>)param {
-	[self sendGETNetworkRequest:url withResponseType:NSDATA_NRT delegate:delegate andParam:param];
+- (void)retrieveStringAtUrl:(NSString *)url 
+			   withEncoding:(NSStringEncoding)enc 
+				   delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				   andParam:(id<NSObject>)param {
+	[self retrieveStringAtUrl:url withHeaderFields:nil encoding:enc delegate:delegate andParam:param];
+}
+
+- (void)retrieveDataAtUrl:(NSString *)url 
+		 withHeaderFields:(NSDictionary *)headers 
+				 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				 andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:url withHeaderFields:headers responseType:NSDATA_NRT delegate:delegate andParam:param];
+}
+
+- (void)retrieveDataAtUrl:(NSString *)url 
+			 withDelegate:(id<IPMNetworkManagerDelegate>)delegate 
+				 andParam:(id<NSObject>)param {
+	[self sendGETNetworkRequest:url withHeaderFields:nil responseType:NSDATA_NRT delegate:delegate andParam:param];
 }
 
 #pragma mark -
 #pragma mark Connection Callbacks
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-    // this method is called when the server has determined that it
-    // has enough information to create the NSURLResponse
-	
-    // it can be called multiple times, for example in the case of a
-    // redirect, so each time we reset the data.
 	NSHTTPURLResponse * httpRes = (NSHTTPURLResponse *)response;
-	//NSLog(@"%i: %@", [httpRes statusCode], [NSHTTPURLResponse localizedStringForStatusCode:[httpRes statusCode]]);
-	//NSLog(@"Headers: \n%@", [httpRes allHeaderFields]);
+	//DLog(@"%i: %@", [httpRes statusCode], [NSHTTPURLResponse localizedStringForStatusCode:[httpRes statusCode]]);
+	//DLog(@"Headers: \n%@", [httpRes allHeaderFields]);
 	IPMPendingConnection * pc = [self getPendingConnection:connection];
 	if (pc) {
 		pc.statusCode = [httpRes statusCode];
@@ -132,7 +294,6 @@
 }
 
 -(void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge {
-	DLog(@"CHALLENGE RECEIVED");
 	IPMPendingConnection * pc = [self getPendingConnection:connection];
 	if (![pc.delegate respondsToSelector:@selector(usernameForAuthenticationChallengeWithParam:)] 
 		|| ![pc.delegate respondsToSelector:@selector(passwordForAuthenticationChallengeWithParam:)])
@@ -151,7 +312,7 @@
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
-	NSLog(@"request failed with error: %@", [error description]);
+	DLog(@"request: %@ failed with error: %@", [connection description], [error description]);
 	IPMPendingConnection * pc = [self getPendingConnection:connection];
 	if ([pc.delegate respondsToSelector:@selector(networkManagerDidNotReceiveResponse:withParam:)])
 		[pc.delegate networkManagerDidNotReceiveResponse:error withParam:pc.param];
@@ -160,7 +321,7 @@
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
-	//NSLog(@"Did finish loading: %@", [connection description]);
+	//DLog(@"Did finish loading: %@", [connection description]);
 	IPMPendingConnection * pc = [self getPendingConnection:connection];
 	if (pc.statusCode >= 400) {
 		NSError * error = [[NSError alloc] initWithDomain:@"" code:pc.statusCode userInfo:nil];
@@ -172,14 +333,14 @@
 		case JSON_NRT:
 			[self processJSONResponseForPendingConnection:pc];
 			break;
+		case NSIMAGE_NRT:
+			[self processUIImageResponseForPendingConnection:pc];
+			break;
 		case NSSTRING_NRT:
 			[self processNSStringResponseForPendingConnection:pc];
 			break;
 		case NSDATA_NRT:
 			[self processNSDataResponseForPendingConnection:pc];
-			break;
-		case NSIMAGE_NRT:
-			[self processNSImageResponseForPendingConnection:pc];
 			break;
 		default:
 			break;
@@ -205,10 +366,10 @@
 	[readableString release];
 }
 
-- (void)processNSImageResponseForPendingConnection:(IPMPendingConnection *)pc {
+- (void)processUIImageResponseForPendingConnection:(IPMPendingConnection *)pc {
 	NSImage * image = [[NSImage alloc] initWithData:pc.receivedData];
-	if ([pc.delegate respondsToSelector:@selector(networkManagerDidReceiveNSImageResponse:withParam:)])
-		[pc.delegate networkManagerDidReceiveNSImageResponse:image withParam:pc.param];
+	if ([pc.delegate respondsToSelector:@selector(networkManagerDidReceiveUIImageResponse:withParam:)])
+		[pc.delegate networkManagerDidReceiveUIImageResponse:image withParam:pc.param];
 	[image release];
 }
 
@@ -220,28 +381,31 @@
 #pragma mark -
 #pragma mark PrivateMethods implementation
 
-- (void)sendGETNetworkRequest:(NSString *)urlrequest withPendingConnection:(IPMPendingConnection *)pc {
+- (void)execNetworkRequest:(NSString *)urlrequest 
+				withMethod:(NSString *)method 
+			  headerFields:(NSDictionary *)headers 
+					  body:(NSData *)requestBody 
+	  andPendingConnection:(IPMPendingConnection *)pc {
 	NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlrequest] 
 															cachePolicy:NSURLRequestUseProtocolCachePolicy 
 														timeoutInterval:10.0];
+	[request setHTTPMethod:method];
 	if (userAgent)
 		[request setValue:userAgent forHTTPHeaderField:@"User-Agent"];
-	if (sid)
-		[request setValue:sid forHTTPHeaderField:@"Cookie"];
+	//if (headers)
+	//	[self addHeaders:headers toRequest:request];
+	if (requestBody)
+		[request setHTTPBody:requestBody];
 	[self sendNetworkRequest:request withPendingConnection:pc];
 }
 
-- (void)sendPOSTNetworkRequest:(NSString *)urlrequest withBody:(NSData *)requestBody andPendingConnection:(IPMPendingConnection *)pc {
-	NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlrequest] 
-															cachePolicy:NSURLRequestReloadIgnoringCacheData 
-														timeoutInterval:10.0];
-	[request setHTTPMethod:@"POST"];
-	if (userAgent)
-		[request setValue:userAgent forHTTPHeaderField:@"User-Agent"];
-	if (sid)
-		[request setValue:sid forHTTPHeaderField:@"Cookie"];
-	[request setHTTPBody:requestBody];
-	[self sendNetworkRequest:request withPendingConnection:pc];
+- (void)addHeaders:(NSDictionary *)headers toRequest:(NSMutableURLRequest *)request {
+	NSArray * keys = [headers allKeys];
+	for (NSString * key in keys) {
+		NSString * value = [headers objectForKey:key];
+		[request setValue:value forHTTPHeaderField:key];
+		DLog(@"SETTING HEADER: %@: %@", key, value);
+	}
 }
 
 - (void)sendNetworkRequest:(NSURLRequest *)request withPendingConnection:(IPMPendingConnection *)pc {

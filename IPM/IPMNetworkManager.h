@@ -23,10 +23,10 @@
 //
 
 /*
- * This class allows you to easily execute network requests, it uses an enum to distinguish between 4 types of responses:
+ * This class allows you to easily execute network requests, it uses an enum defined in IPMConfiguration.h to distinguish between 4 types of responses:
  * - NSString
  * - NSData
- * - NSImage
+ * - UIImage
  * - JSON
  * Once the request finishes, a callback is called on the delegate object passed as paramenter on each method. Please refere to the IPMNetworkManagerDelegate.h
  * to learn more about these callbacks.
@@ -38,20 +38,24 @@
 	@private
 	NSMutableDictionary * connectionsData;
 	NSString * userAgent;
-	NSString * sid;
 }
 
 @property(nonatomic, retain) NSString * userAgent; // the user agent to set for each request, it can be left as nil
-@property(nonatomic, retain) NSString * sid;
 
 /*
  * This method is used to download an image.
  * - imageUrl: the image url
- * - delegate: when the image is downloaded, the method networkManagerDidReceiveNSImageResponse:withParam: will be called on the delegate
+ * - delegate: when the image is downloaded, the method networkManagerDidReceiveUIImageResponse:withParam: will be called on the delegate
  * - param: this object will be passed back with the reponse callback, it can be used to distinguish between several request, it can be nil
  */
 - (void)retrieveImageAtUrl:(NSString *)imageUrl 
 			  withDelegate:(id<IPMNetworkManagerDelegate>)delegate 
+				  andParam:(id<NSObject>)param;
+
+/* - headers: additional http headers, can be nil */
+- (void)retrieveImageAtUrl:(NSString *)imageUrl 
+		  withHeaderFields:(NSDictionary *)headers 
+				  delegate:(id<IPMNetworkManagerDelegate>)delegate 
 				  andParam:(id<NSObject>)param;
 
 /*
@@ -64,6 +68,12 @@
 			 withDelegate:(id<IPMNetworkManagerDelegate>)delegate 
 				 andParam:(id<NSObject>)param;
 
+/* - headers: additional http headers, can be nil */
+- (void)retrieveJsonAtUrl:(NSString *)url 
+		 withHeaderFields:(NSDictionary *)headers
+				 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				 andParam:(id<NSObject>)param;
+
 /*
  * This method is used to retrieve a NSString object.
  * - url: the request url
@@ -73,7 +83,14 @@
  */
 - (void)retrieveStringAtUrl:(NSString *)url 
 			   withEncoding:(NSStringEncoding)enc 
-				andDelegate:(id<IPMNetworkManagerDelegate>)delegate 
+				   delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				   andParam:(id<NSObject>)param;
+
+/* - headers: additional http headers, can be nil */
+- (void)retrieveStringAtUrl:(NSString *)url 
+		   withHeaderFields:(NSDictionary *)headers
+				   encoding:(NSStringEncoding)enc 
+				   delegate:(id<IPMNetworkManagerDelegate>)delegate 
 				   andParam:(id<NSObject>)param;
 
 /*
@@ -86,6 +103,12 @@
 			   withDelegate:(id<IPMNetworkManagerDelegate>)delegate 
 				   andParam:(id<NSObject>)param;
 
+/* - headers: additional http headers, can be nil */
+- (void)retrieveStringAtUrl:(NSString *)url 
+		   withHeaderFields:(NSDictionary *)headers
+				   delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				   andParam:(id<NSObject>)param;
+
 /*
  * This method is used to retrieve a NSData object.
  * - url: the request url
@@ -94,6 +117,12 @@
  */
 - (void)retrieveDataAtUrl:(NSString *)url
 			 withDelegate:(id<IPMNetworkManagerDelegate>)delegate 
+				 andParam:(id<NSObject>)param;
+
+/* - headers: additional http headers, can be nil */
+- (void)retrieveDataAtUrl:(NSString *)url 
+		 withHeaderFields:(NSDictionary *)headers 
+				 delegate:(id<IPMNetworkManagerDelegate>)delegate 
 				 andParam:(id<NSObject>)param;
 
 /*
@@ -108,6 +137,13 @@
 					 delegate:(id<IPMNetworkManagerDelegate>)delegate 
 					 andParam:(id<NSObject>)param;
 
+/* - headers: additional http headers, can be nil */
+- (void)sendGETNetworkRequest:(NSString *)url 
+			 withHeaderFields:(NSDictionary *)headers 
+				 responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					 andParam:(id<NSObject>)param;
+
 /*
  * This is a general method to initiate a POST network request.
  * - url: request url
@@ -118,8 +154,90 @@
  */
 - (void)sendPOSTNetworkRequest:(NSString *)url 
 					  withBody:(NSString *)body 
-			  withResponseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
 					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
 					  andParam:(id<NSObject>)param;
+
+/* - headers: additional http headers, can be nil */
+- (void)sendPOSTNetworkRequest:(NSString *)url 
+					  withBody:(NSString *)body 
+				  headerFields:(NSDictionary *)headers 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					  andParam:(id<NSObject>)param;
+
+/*
+ * This method is used to POST a Json object.
+ * - url: request url
+ * - body: the body of the request, it will be used to create a Json object first and then added as the request body
+ * - type: response type
+ * - delegate: the delegate will receive the response through a callback (the callback changes depending on the respose type)
+ * - param: this object will be passed back with the reponse callback, it can be used to distinguish between several request, it can be nil
+ */
+- (void)sendPOSTNetworkRequest:(NSString *)url 
+				  withJSONBody:(NSDictionary *)body 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					  andParam:(id<NSObject>)param;
+
+/* - headers: additional http headers, can be nil */
+- (void)sendPOSTNetworkRequest:(NSString *)url 
+				  withJSONBody:(NSDictionary *)body 
+				  headerFields:(NSDictionary *)headers 
+				  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					  andParam:(id<NSObject>)param;
+
+/*
+ * This is a general method to initiate a PUT network request.
+ * - url: request url
+ * - body: the body of the request
+ * - headers: additional http headers, can be nil
+ * - type: response type
+ * - delegate: the delegate will receive the response through a callback (the callback changes depending on the respose type)
+ * - param: this object will be passed back with the reponse callback, it can be used to distinguish between several request, it can be nil
+ */
+
+- (void)sendPUTNetworkRequest:(NSString *)url 
+					 withBody:(NSString *)body 
+				 headerFields:(NSDictionary *)headers 
+				 responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					 andParam:(id<NSObject>)param;
+
+/*
+ * This method is used to PUT a Json object.
+ * - url: request url
+ * - body: the body of the request, it will be used to create a Json object first and then added as the request body
+ * - headers: additional http headers, can be nil
+ * - type: response type
+ * - delegate: the delegate will receive the response through a callback (the callback changes depending on the respose type)
+ * - param: this object will be passed back with the reponse callback, it can be used to distinguish between several request, it can be nil
+ */
+
+- (void)sendPUTNetworkRequest:(NSString *)url 
+				 withJSONBody:(NSDictionary *)body 
+				 headerFields:(NSDictionary *)headers 
+				 responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+					 delegate:(id<IPMNetworkManagerDelegate>)delegate 
+					 andParam:(id<NSObject>)param;
+
+/*
+ * This is a general method to initiate a network request.
+ * - url: request url
+ * - method: request method (i.e. @"GET", @"POST", @"PUT", ...)
+ * - body: the body of the request, can be nil
+ * - headers: additional http headers, can be nil
+ * - type: response type
+ * - delegate: the delegate will receive the response through a callback (the callback changes depending on the respose type)
+ * - param: this object will be passed back with the reponse callback, it can be used to distinguish between several request, it can be nil
+ */
+- (void)sendNetworkRequest:(NSString *)url 
+				withMethod:(NSString *)method
+					  body:(NSData *)body 
+			  headerFields:(NSDictionary *)headers 
+			  responseType:(IPM_NETWORK_RESPONSE_TYPE)type 
+				  delegate:(id<IPMNetworkManagerDelegate>)delegate 
+				  andParam:(id<NSObject>)param;
 
 @end

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4954B59A11D2284600EE6B8A /* IPMNetworkManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 4954B59911D2284600EE6B8A /* IPMNetworkManager.m */; };
 		495B278011A566A300EE4BEB /* NetParam.m in Sources */ = {isa = PBXBuildFile; fileRef = 495B277F11A566A300EE4BEB /* NetParam.m */; };
 		49CA1EF411AFB7BF004B498E /* Feed.m in Sources */ = {isa = PBXBuildFile; fileRef = 49CA1EF311AFB7BF004B498E /* Feed.m */; };
 		49CA1F7111B0FEC5004B498E /* NSObject+SBJSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 49CA1F6611B0FEC5004B498E /* NSObject+SBJSON.m */; };
@@ -15,7 +16,6 @@
 		49CA1F7411B0FEC5004B498E /* SBJsonBase.m in Sources */ = {isa = PBXBuildFile; fileRef = 49CA1F6C11B0FEC5004B498E /* SBJsonBase.m */; };
 		49CA1F7511B0FEC5004B498E /* SBJsonParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 49CA1F6E11B0FEC5004B498E /* SBJsonParser.m */; };
 		49CA1F7611B0FEC5004B498E /* SBJsonWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 49CA1F7011B0FEC5004B498E /* SBJsonWriter.m */; };
-		61747A0F11A7EF9100421C4F /* IPMNetworkManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 61747A0B11A7EF9100421C4F /* IPMNetworkManager.m */; };
 		61747A1011A7EF9100421C4F /* IPMPendingConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 61747A0E11A7EF9100421C4F /* IPMPendingConnection.m */; };
 		61747A1E11A7F04100421C4F /* bwerror.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1811A7F04100421C4F /* bwerror.png */; };
 		61747A1F11A7F04100421C4F /* error.png in Resources */ = {isa = PBXBuildFile; fileRef = 61747A1911A7F04100421C4F /* error.png */; };
@@ -74,6 +74,9 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* Reader Notifier_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Reader Notifier_Prefix.pch"; sourceTree = "<group>"; };
+		4954B59811D2284600EE6B8A /* IPMNetworkManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManager.h; sourceTree = "<group>"; };
+		4954B59911D2284600EE6B8A /* IPMNetworkManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMNetworkManager.m; sourceTree = "<group>"; };
+		4954B5C711D22D3E00EE6B8A /* IPMNetworkManagerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManagerDelegate.h; sourceTree = "<group>"; };
 		495B277E11A566A300EE4BEB /* NetParam.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetParam.h; sourceTree = "<group>"; };
 		495B277F11A566A300EE4BEB /* NetParam.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NetParam.m; sourceTree = "<group>"; };
 		49CA1EF211AFB7BF004B498E /* Feed.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Feed.h; sourceTree = "<group>"; };
@@ -92,9 +95,6 @@
 		49CA1F6F11B0FEC5004B498E /* SBJsonWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBJsonWriter.h; sourceTree = "<group>"; };
 		49CA1F7011B0FEC5004B498E /* SBJsonWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBJsonWriter.m; sourceTree = "<group>"; };
 		61747A0911A7EF9100421C4F /* IPMConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMConfiguration.h; sourceTree = "<group>"; };
-		61747A0A11A7EF9100421C4F /* IPMNetworkManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManager.h; sourceTree = "<group>"; };
-		61747A0B11A7EF9100421C4F /* IPMNetworkManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMNetworkManager.m; sourceTree = "<group>"; };
-		61747A0C11A7EF9100421C4F /* IPMNetworkManagerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManagerDelegate.h; sourceTree = "<group>"; };
 		61747A0D11A7EF9100421C4F /* IPMPendingConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMPendingConnection.h; sourceTree = "<group>"; };
 		61747A0E11A7EF9100421C4F /* IPMPendingConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMPendingConnection.m; sourceTree = "<group>"; };
 		61747A1811A7F04100421C4F /* bwerror.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bwerror.png; sourceTree = "<group>"; };
@@ -254,10 +254,10 @@
 		61747A0011A7EF1A00421C4F /* IPM */ = {
 			isa = PBXGroup;
 			children = (
+				4954B59811D2284600EE6B8A /* IPMNetworkManager.h */,
+				4954B59911D2284600EE6B8A /* IPMNetworkManager.m */,
+				4954B5C711D22D3E00EE6B8A /* IPMNetworkManagerDelegate.h */,
 				61747A0911A7EF9100421C4F /* IPMConfiguration.h */,
-				61747A0A11A7EF9100421C4F /* IPMNetworkManager.h */,
-				61747A0B11A7EF9100421C4F /* IPMNetworkManager.m */,
-				61747A0C11A7EF9100421C4F /* IPMNetworkManagerDelegate.h */,
 				61747A0D11A7EF9100421C4F /* IPMPendingConnection.h */,
 				61747A0E11A7EF9100421C4F /* IPMPendingConnection.m */,
 			);
@@ -390,7 +390,6 @@
 				C7C90A5E0AFA790F0080D14F /* MainController.m in Sources */,
 				C7F2B64B0B0A5E8300790961 /* Keychain.m in Sources */,
 				495B278011A566A300EE4BEB /* NetParam.m in Sources */,
-				61747A0F11A7EF9100421C4F /* IPMNetworkManager.m in Sources */,
 				61747A1011A7EF9100421C4F /* IPMPendingConnection.m in Sources */,
 				61747A2A11A7F0D900421C4F /* Utilities.m in Sources */,
 				49CA1EF411AFB7BF004B498E /* Feed.m in Sources */,
@@ -400,6 +399,7 @@
 				49CA1F7411B0FEC5004B498E /* SBJsonBase.m in Sources */,
 				49CA1F7511B0FEC5004B498E /* SBJsonParser.m in Sources */,
 				49CA1F7611B0FEC5004B498E /* SBJsonWriter.m in Sources */,
+				4954B59A11D2284600EE6B8A /* IPMNetworkManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
