@@ -526,12 +526,19 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 - (void)processLoginToGoogle:(NSString *)result {
 	DLog(@"LOGIN RESULT: %@", result);
 	NSString * storedSID = nil;
+	NSString * storedToken = nil;
 	NSArray * tmp = [result componentsSeparatedByString:@"Auth="];
-	if ([tmp count] == 2) {
-		storedSID = [NSString stringWithFormat:@"GoogleLogin auth=%@", [tmp objectAtIndex:1]];
+	NSArray * tmp2 = [[tmp objectAtIndex:0] componentsSeparatedByString:@"LSID="];
+	tmp2 = [[tmp2 objectAtIndex:0] componentsSeparatedByString:@"SID="];
+	storedSID = [NSString stringWithFormat:@"SID=%@", [tmp2 objectAtIndex:1]];
+	storedToken = [NSString stringWithFormat:@"GoogleLogin auth=%@", [tmp objectAtIndex:1]];
+	storedSID = [storedSID stringByReplacingOccurrencesOfString:@"\n" withString:@""];
+	storedToken = [storedToken stringByReplacingOccurrencesOfString:@"\n" withString:@""];
+	if (storedSID && storedToken) {
 		if (cookieHeader)
 			[cookieHeader release];
-		cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedSID, @"Authorization", nil];
+		//cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedSID, @"Cookie", storedToken, @"Authorization", nil];
+		cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedToken, @"Authorization", nil];
 		if (isCheckingCredential) {
 			[self displayAlertWithHeader:NSLocalizedString(@"Success",nil) andBody:NSLocalizedString(@"You are now connected to Google", nil)];
 			isCheckingCredential = NO;
