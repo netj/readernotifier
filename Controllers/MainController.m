@@ -402,20 +402,18 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (void)loginToGoogle {
-	if (!cookieHeader) {
-		NSString * p1 = [self usernameForAuthenticationChallengeWithParam:nil];
-		NSString * p2 = [self passwordForAuthenticationChallengeWithParam:nil];
-		DLog(@"LOG IN WITH USERNAME: %@ PASSWORD: %@", p1, p2);
-		NSString * params = [NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d", p1, p2, versionBuildNumber];
-		NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processLoginToGoogle:) andFail:@selector(processFailLoginToGoogle:) onTarget:self];
-		[networkManager sendPOSTNetworkRequest:@"https://www.google.com/accounts/ClientLogin"  
-									  withBody:params 
-								  headerFields:nil 
-								  responseType:NSSTRING_NRT 
-									  delegate:self 
-									  andParam:np];
-		[np release];
-	}
+	NSString * p1 = [self usernameForAuthenticationChallengeWithParam:nil];
+	NSString * p2 = [self passwordForAuthenticationChallengeWithParam:nil];
+	DLog(@"LOG IN WITH USERNAME: %@ PASSWORD: %@", p1, p2);
+	NSString * params = [NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d", p1, p2, versionBuildNumber];
+	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processLoginToGoogle:) andFail:@selector(processFailLoginToGoogle:) onTarget:self];
+	[networkManager sendPOSTNetworkRequest:@"https://www.google.com/accounts/ClientLogin"
+									withBody:params 
+								headerFields:nil 
+								responseType:NSSTRING_NRT 
+									delegate:self 
+									andParam:np];
+	[np release];
 }
 
 - (void)getTokenFromGoogle {
@@ -509,6 +507,8 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (void)networkManagerDidNotReceiveResponse:(NSError *)error withParam:(id<NSObject>)param {
+	if ([error code] == 401)
+		[self loginToGoogle];
 	NetParam * nParam = (NetParam *)param;
 	[nParam invokeFailWithError:error];
 }
@@ -525,14 +525,13 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 - (void)processLoginToGoogle:(NSString *)result {
 	DLog(@"LOGIN RESULT: %@", result);
-	NSScanner * theScanner = [[NSScanner alloc] initWithString:result];
 	NSString * storedSID = nil;
-	if ([theScanner scanString:@"SID=" intoString:NULL] 
-		&& [theScanner scanUpToString:@"\nLSID=" intoString:&storedSID]) {
-		storedSID = [NSString stringWithFormat:@"SID=%@", storedSID];
+	NSArray * tmp = [result componentsSeparatedByString:@"Auth="];
+	if ([tmp count] == 2) {
+		storedSID = [NSString stringWithFormat:@"GoogleLogin auth=%@", [tmp objectAtIndex:1]];
 		if (cookieHeader)
 			[cookieHeader release];
-		cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedSID, @"Cookie", nil];
+		cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedSID, @"Authorization", nil];
 		if (isCheckingCredential) {
 			[self displayAlertWithHeader:NSLocalizedString(@"Success",nil) andBody:NSLocalizedString(@"You are now connected to Google", nil)];
 			isCheckingCredential = NO;
@@ -561,7 +560,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		cookieHeader = nil;
 		[self errorImageOn];
 	}
-	[theScanner release];
 }
 
 - (void)processFailLoginToGoogle:(NSError *)error {

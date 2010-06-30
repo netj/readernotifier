@@ -7,6 +7,19 @@
 		<language>en</language>
 		
 		<item>
+			<title>Version 2.2.1</title>
+			<sparkle:releaseNotesLink>http://www.caffeineapps.com/ReaderNotifierReloaded/2.2.1.html</sparkle:releaseNotesLink>
+			<pubDate>Wed, 30 Jun 2010 10:12:19 +0200</pubDate>
+			<enclosure
+				url="http://www.caffeineapps.com/ReaderNotifierReloaded//Reader Notifier Reloaded_2.2.1.zip"
+				sparkle:version="2.2.1"
+				type="application/octet-stream"
+				length="907198"
+				sparkle:dsaSignature="MC0CFElS7swAkMOVRylvhNHIgx25+M+TAhUAu0iOZcziy/n3NFyGq4qfzxNgpRY="
+			/>
+		</item>
+		
+		<item>
 			<title>Version 2.2</title>
 			<sparkle:releaseNotesLink>http://www.caffeineapps.com/ReaderNotifierReloaded/2.2.html</sparkle:releaseNotesLink>
 			<pubDate>Wed, 23 Jun 2010 14:12:57 +0200</pubDate>

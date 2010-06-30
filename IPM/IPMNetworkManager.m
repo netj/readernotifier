@@ -392,8 +392,8 @@
 	[request setHTTPMethod:method];
 	if (userAgent)
 		[request setValue:userAgent forHTTPHeaderField:@"User-Agent"];
-	//if (headers)
-	//	[self addHeaders:headers toRequest:request];
+	if (headers)
+		[self addHeaders:headers toRequest:request];
 	if (requestBody)
 		[request setHTTPBody:requestBody];
 	[self sendNetworkRequest:request withPendingConnection:pc];
@@ -410,6 +410,11 @@
 
 - (void)sendNetworkRequest:(NSURLRequest *)request withPendingConnection:(IPMPendingConnection *)pc {
 	DLog(@"SENDING REQUEST: %@", [request description]);
+#ifdef DEBUG
+	NSString * bodyString = [[NSString alloc] initWithData:[request HTTPBody] encoding:NSUTF8StringEncoding];
+	DLog(@"WITH BODY: %@", bodyString);
+	[bodyString release];
+#endif
 	NSURLConnection * connection = [[NSURLConnection alloc] initWithRequest:request delegate:self];
 	if (connection) {
 		[connectionsData setObject:pc forKey:[self generateKeyForConnection:connection]];
