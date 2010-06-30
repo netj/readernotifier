@@ -52,6 +52,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 #define maxLettersInSource 20
 #define maxLettersInTitle 60
 #define secondsToSleep 60
+#define kUserAgent @"reader-notifier-reloaded/2.2.1"
 
 @interface MainController (PrivateMethods)
 - (void)shareFeed:(Feed *)f;
@@ -103,6 +104,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		prefs = [[NSUserDefaults standardUserDefaults] retain];
 		[prefs registerDefaults:defaultPrefs];	
 		networkManager = [[IPMNetworkManager alloc] init];
+		networkManager.userAgent = kUserAgent;
 		currentToken = nil;
 		endOfFeedIndex = indexOfPreviewFields;
 		needToRemoveNormalButtons = NO;
@@ -367,8 +369,8 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 #pragma mark Netowrk methods
 
 - (void)getUnreadCountWithDeferredCall:(NetParam *)dc {
-	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=json&client=RNR", 
-					  [self getURLPrefix]];
+	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/unread-count?all=true&autorefresh=true&output=json&client=%@", 
+					  [self getURLPrefix], kUserAgent];
 	NetParam * np;
 	if (dc)
 		np = [[NetParam alloc] initWithSuccess:@selector(processUnreadCount:withDeferred:) fail:@selector(processFailUnreadCount:) andSecondParam:dc onTarget:self];
@@ -405,11 +407,13 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	NSString * p1 = [self usernameForAuthenticationChallengeWithParam:nil];
 	NSString * p2 = [self passwordForAuthenticationChallengeWithParam:nil];
 	DLog(@"LOG IN WITH USERNAME: %@ PASSWORD: %@", p1, p2);
-	NSString * params = [NSString stringWithFormat:@"Email=%@&Passwd=%@&service=cl&source=TroelsBay-ReaderNotifier-build%d", p1, p2, versionBuildNumber];
+	NSString * params = [NSString stringWithFormat:@"accountType=HOSTED_OR_GOOGLE&Email=%@&Passwd=%@&service=reader&source=%@", 
+						 p1, p2, kUserAgent];
 	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processLoginToGoogle:) andFail:@selector(processFailLoginToGoogle:) onTarget:self];
+	NSDictionary * headers = [NSDictionary dictionaryWithObjectsAndKeys:@"application/x-www-form-urlencoded", @"Content-type", nil];
 	[networkManager sendPOSTNetworkRequest:@"https://www.google.com/accounts/ClientLogin"
 									withBody:params 
-								headerFields:nil 
+								headerFields:headers 
 								responseType:NSSTRING_NRT 
 									delegate:self 
 									andParam:np];
@@ -417,16 +421,17 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (void)getTokenFromGoogle {
-	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/token", [self getURLPrefix]];
+	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/token?client=%@", [self getURLPrefix], kUserAgent];
 	NetParam * np = [[NetParam alloc] initWithSuccess:@selector(processTokenFromGoogle:) andFail:@selector(processFailTokenFromGoogle:) onTarget:self];
-	[networkManager retrieveStringAtUrl:url withDelegate:self andParam:np];
+	DLog(@"RETRIEVING TOKEN WITH HEADERS: %@", [cookieHeader description]);
+	[networkManager retrieveStringAtUrl:url withHeaderFields:cookieHeader delegate:self andParam:np];
 	[np release];
 }
 
 - (void)markOneAsStarred:(Feed *)f {
 	NSString * feedstring = [f.feedUrl stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 	NSString * idsstring = [f.feedId stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=RNR", [self getURLPrefix]];
+	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=%@", [self getURLPrefix], kUserAgent];
 	NSString * body = [NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F-%%2Fstate%%2Fcom.google%%2Fstarred&T=%@", 
 					   feedstring, idsstring, currentToken];
 	[networkManager sendPOSTNetworkRequest:url withBody:body headerFields:cookieHeader responseType:NORESPONSE_NRT delegate:nil andParam:nil];
@@ -436,7 +441,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 - (void)shareFeed:(Feed *)f {
 	NSString * feedstring = [f.feedUrl stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 	NSString * idsstring = [f.feedId stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=RNR", [self getURLPrefix]];
+	NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/edit-tag?client=%@", [self getURLPrefix], kUserAgent];
 	NSString * body = [NSString stringWithFormat:@"s=%@&i=%@&ac=edit-tags&a=user%%2F-%%2Fstate%%2Fcom.google%%2Fbroadcast&T=%@", 
 					   feedstring, idsstring, currentToken];
 	[networkManager sendPOSTNetworkRequest:url withBody:body headerFields:cookieHeader responseType:NORESPONSE_NRT delegate:nil andParam:nil];
@@ -458,7 +463,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 - (void)markAllAsReadDeferred {
 	if (totalUnreadCount == [feeds count] || [[prefs valueForKey:@"alwaysEnableMarkAllAsRead"] boolValue]) {
-		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/mark-all-as-read?client=RNR", [self getURLPrefix]];
+		NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/mark-all-as-read?client=%@", [self getURLPrefix], kUserAgent];
 		NSString * replacedLabel = [[self getLabel] stringByReplacingOccurrencesOfString:@"/" withString:@"%2F"];
 		NSString * body = [NSString stringWithFormat:@"s=user%%2F-%%2F%@&T=%@", 
 						   replacedLabel, currentToken];
@@ -469,7 +474,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[self updateMenu];
 	} else if (totalUnreadCount != -1) {
 		[self displayAlertWithHeader:NSLocalizedString(@"Warning",nil) 
-							 andBody:NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.",nil)];
+							 andBody:NSLocalizedString(@"There are new unread items available online. Mark all as read has been canceled.", nil)];
 		[self checkNow:nil];
 	}
 }
@@ -525,20 +530,14 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 
 - (void)processLoginToGoogle:(NSString *)result {
 	DLog(@"LOGIN RESULT: %@", result);
-	NSString * storedSID = nil;
 	NSString * storedToken = nil;
 	NSArray * tmp = [result componentsSeparatedByString:@"Auth="];
-	NSArray * tmp2 = [[tmp objectAtIndex:0] componentsSeparatedByString:@"LSID="];
-	tmp2 = [[tmp2 objectAtIndex:0] componentsSeparatedByString:@"SID="];
-	storedSID = [NSString stringWithFormat:@"SID=%@", [tmp2 objectAtIndex:1]];
 	storedToken = [NSString stringWithFormat:@"GoogleLogin auth=%@", [tmp objectAtIndex:1]];
-	storedSID = [storedSID stringByReplacingOccurrencesOfString:@"\n" withString:@""];
-	storedToken = [storedToken stringByReplacingOccurrencesOfString:@"\n" withString:@""];
-	if (storedSID && storedToken) {
+	storedToken = [storedToken substringToIndex:(storedToken.length - 1)];
+	if (storedToken) {
 		if (cookieHeader)
 			[cookieHeader release];
-		cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedSID, @"Cookie", storedToken, @"Authorization", nil];
-		//cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedToken, @"Authorization", nil];
+		cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedToken, @"Authorization", @"application/x-www-form-urlencoded", @"Content-type" , nil];
 		if (isCheckingCredential) {
 			[self displayAlertWithHeader:NSLocalizedString(@"Success",nil) andBody:NSLocalizedString(@"You are now connected to Google", nil)];
 			isCheckingCredential = NO;
@@ -1003,8 +1002,8 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	[statusItem setToolTip:NSLocalizedString(@"Failed to connect to Google Reader. Please try again.",nil)];
 	[statusItem setAlternateImage:errorImage];
 	[statusItem setImage:errorImage];
-	[cookieHeader release];
-	cookieHeader = nil;
+	//[cookieHeader release];
+	//cookieHeader = nil;
 }
 
 - (NSString *)getLabel {

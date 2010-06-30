@@ -312,8 +312,11 @@
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
-	DLog(@"request: %@ failed with error: %@", [connection description], [error description]);
+	DLog(@"REQUEST: %@ FAILED with error: %@", [connection description], [error description]);
 	IPMPendingConnection * pc = [self getPendingConnection:connection];
+	/*NSString * readableString = [[NSString alloc] initWithData:pc.receivedData encoding:pc.encoding];
+	DLog(@"and DATA: %@", readableString);
+	[readableString release];*/
 	if ([pc.delegate respondsToSelector:@selector(networkManagerDidNotReceiveResponse:withParam:)])
 		[pc.delegate networkManagerDidNotReceiveResponse:error withParam:pc.param];
 	[connection release];
@@ -387,11 +390,12 @@
 					  body:(NSData *)requestBody 
 	  andPendingConnection:(IPMPendingConnection *)pc {
 	NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlrequest] 
-															cachePolicy:NSURLRequestUseProtocolCachePolicy 
+															cachePolicy:NSURLRequestReloadIgnoringCacheData 
 														timeoutInterval:10.0];
+	[request setHTTPShouldHandleCookies:NO];
 	[request setHTTPMethod:method];
 	if (userAgent)
-		[request setValue:userAgent forHTTPHeaderField:@"User-Agent"];
+		[request setValue:userAgent forHTTPHeaderField:@"User-agent"];
 	if (headers)
 		[self addHeaders:headers toRequest:request];
 	if (requestBody)
@@ -413,6 +417,7 @@
 #ifdef DEBUG
 	NSString * bodyString = [[NSString alloc] initWithData:[request HTTPBody] encoding:NSUTF8StringEncoding];
 	DLog(@"WITH BODY: %@", bodyString);
+	DLog(@"AND HEADERS:%@", [[request allHTTPHeaderFields] description]);
 	[bodyString release];
 #endif
 	NSURLConnection * connection = [[NSURLConnection alloc] initWithRequest:request delegate:self];
