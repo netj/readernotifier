@@ -537,8 +537,8 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	if (storedSID && storedToken) {
 		if (cookieHeader)
 			[cookieHeader release];
-		//cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedSID, @"Cookie", storedToken, @"Authorization", nil];
-		cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedToken, @"Authorization", nil];
+		cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedSID, @"Cookie", storedToken, @"Authorization", nil];
+		//cookieHeader = [[NSDictionary alloc] initWithObjectsAndKeys:storedToken, @"Authorization", nil];
 		if (isCheckingCredential) {
 			[self displayAlertWithHeader:NSLocalizedString(@"Success",nil) andBody:NSLocalizedString(@"You are now connected to Google", nil)];
 			isCheckingCredential = NO;
@@ -647,6 +647,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 }
 
 - (void)processTokenFromGoogle:(NSString *)result {
+	DLog(@"TOKEN RESULT: %@", result);
 	if (currentToken)
 		[currentToken release];
 	currentToken = [result retain];
