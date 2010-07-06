@@ -715,7 +715,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[self updateNormalButtons];
 		[self updateNotifications];
 		[self updateShowCount];
-		[self updateReadLabel];
 	}
 	[self printStatus];
 }
@@ -887,6 +886,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[statusItem setAttributedTitle:[self makeAttributedStatusItemString:@""]];
 		[statusItem setLength:ourStatusItemWithLength];
 	}
+	[self updateReadLabel];
 }
 
 - (void)updateReadLabel {
