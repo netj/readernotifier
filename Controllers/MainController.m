@@ -571,7 +571,6 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 - (void)processFailLoginToGoogle:(NSError *)error {
 	[cookieHeader release];
 	cookieHeader = nil;
-	[self displayAlertWithHeader:NSLocalizedString(@"Error",nil) andBody:NSLocalizedString(@"Unable to connect to Google with user details", nil)];
 	[feeds removeAllObjects];
 	[oldFeeds removeAllObjects];
 	[self displayMessage:@"no Internet connection"];
