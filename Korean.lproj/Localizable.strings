@@ -1,0 +1,117 @@
+﻿
+// No comment provided by engineer.
+"%d Unread" = "%d개 안읽음";
+
+// No comment provided by engineer.
+"Authentication error" = "인증 오류";
+
+// No comment provided by engineer.
+"Check Now" = "새 항목 확인";
+
+// No comment provided by engineer.
+"Checked %d hour(s) ago" = "%d 시간 전에 새로고침";
+
+// No comment provided by engineer.
+"Checked %d min ago" = "%d분 전에 새로고침";
+
+// No comment provided by engineer.
+"Checked 1 min ago" = "1분 전에 새로고침";
+
+// No comment provided by engineer.
+"Checked less than 1 min ago" = "방금 전에 새로고침";
+
+// No comment provided by engineer.
+"Checking..." = "새로고침 중...";
+
+// No comment provided by engineer.
+"Error" = "오류";
+
+// No comment provided by engineer.
+"Failed to connect to Google Reader. Please try again." = "구글리더에 연결 실패. 다시 시도해주십시오.";
+
+// No comment provided by engineer.
+"Go to Google Reader" = "구글리더 열기";
+
+// No comment provided by engineer.
+"Google Reader Notifier has found a number of new items." = "Reader Notifier가 새 항목들을 잔뜩 발견했습니다.";
+
+// No comment provided by engineer.
+"It seems you do not have a password in the Keychain. Please go to the preferences now and supply your password" = "키체인에 저장된 암호가 없는 것 같습니다. 환경설정에 가셔서 암호를 입력해주십시오.";
+
+// No comment provided by engineer.
+"It seems you do not have a username filled in. Please go to the preferences now and supply your username" = "사용자이름을 채우지 않은 것 같습니다. 환경설정에 가셔서 사용자이름을 입력해주십시오.";
+
+// No comment provided by engineer.
+"Mark all as read" = "모든 항목 읽은 상태로 표시";
+
+// No comment provided by engineer.
+"Mark all as read has been disabled" = "모두 읽은 상태로 표시 기능이 꺼져있음";
+
+// No comment provided by engineer.
+"Mark item as read" = "항목을 읽은 상태로 표시";
+
+// No comment provided by engineer.
+"More than %d unread items" = "%d개 이상의 안읽은 항목";
+
+// No comment provided by engineer.
+"More unread items exist" = "안읽은 항목들이 더 남아있음";
+
+// No comment provided by engineer.
+"New Subscription" = "구독 추가";
+
+// No comment provided by engineer.
+"New Unread Items" = "읽지않은 새 항목";
+
+// No comment provided by engineer.
+"No unread items" = "안읽은 항목 없음";
+
+// No comment provided by engineer.
+"No Unread Items" = "안읽은 항목 없음";
+
+// No comment provided by engineer.
+"Open all items" = "모든 항목 열기";
+
+// No comment provided by engineer.
+"Preferences..." = "환경설정...";
+
+// No comment provided by engineer.
+"Reader Notifier has found a new TorrentCast. However we are unable to download it because the folder you've specified does not exists. Please choose a new folder in the preferences. In addition, TorrentCasting has been disabled." = "Reader Notifier가 새 토렌트캐스트를 발견했습니다. 그러나 지정한 폴더가 없어져서 토렌트를 받을 수가 없습니다. 환경설정에서 새 폴더를 선택하시기 바랍니다. 참고로, 토렌트캐스트 기능은 자동으로 꺼졌습니다.";
+
+// No comment provided by engineer.
+"Share item and mark as read" = "항목을 공유하고 읽은 상태로 표시";
+
+// No comment provided by engineer.
+"Star item and mark as read" = "항목을 별표하고 읽은 상태로 표시";
+
+// No comment provided by engineer.
+"Subscribe to Feed..." = "피드 구독하기...";
+
+// No comment provided by engineer.
+"Success" = "성공";
+
+// No comment provided by engineer.
+"Thanks" = "확인";
+
+// No comment provided by engineer.
+"There are more unread items online in the Google Reader interface. This function will cause Google Reader Notifier to mark all as read - whether or not they are visible in the menubar" = "구글리더에서만 보이는 안읽은 항목들이 더 있습니다. 이 기능은 Reader Notifier의 메뉴바에 보이지 않는 항목까지도 모두 읽은 상태로 표시하게 됩니다.";
+
+// No comment provided by engineer.
+"There are new unread items available online. Mark all as read has been canceled." = "읽지않은 새 항목이 생겼습니다. 모두 읽은 상태로 표시가 취소되었습니다.";
+
+// No comment provided by engineer.
+"Title: %@\nFeed: %@\n\n%@" = "제목: %@\n피드: %@\n\n%@";
+
+// No comment provided by engineer.
+"TorrentCast Error" = "토렌트캐스트 오류";
+
+// No comment provided by engineer.
+"Unread Items: %d" = "안읽은 항목 %d개";
+
+// No comment provided by engineer.
+"Warning" = "경고";
+
+// No comment provided by engineer.
+"Warning, items online will be marked read" = "경고: 모든 항목들이 읽은 상태로 표시됩니다.";
+
+// No comment provided by engineer.
+"You are now connected to Google" = "구글에 연결되었습니다.";

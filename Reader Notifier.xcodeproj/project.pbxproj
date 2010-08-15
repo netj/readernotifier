@@ -74,6 +74,9 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* Reader Notifier_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Reader Notifier_Prefix.pch"; sourceTree = "<group>"; };
+		45B9D0121217A59D00936B53 /* Korean */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Korean; path = Korean.lproj/Localizable.strings; sourceTree = "<group>"; };
+		45B9D0571217C9B200936B53 /* Korean */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = Korean; path = Korean.lproj/MainMenu.nib; sourceTree = "<group>"; };
+		45B9D0591217C9D100936B53 /* Korean */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Korean; path = Korean.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		4954B59811D2284600EE6B8A /* IPMNetworkManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManager.h; sourceTree = "<group>"; };
 		4954B59911D2284600EE6B8A /* IPMNetworkManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IPMNetworkManager.m; sourceTree = "<group>"; };
 		4954B5C711D22D3E00EE6B8A /* IPMNetworkManagerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IPMNetworkManagerDelegate.h; sourceTree = "<group>"; };
@@ -333,6 +336,7 @@
 				German,
 				Russian,
 				Danish,
+				Korean,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* Reader Notifier */;
 			projectDirPath = "";
@@ -411,6 +415,7 @@
 			children = (
 				089C165DFE840E0CC02AAC07 /* English */,
 				9A8BB46F0DCA43F8003AD06B /* Russian */,
+				45B9D0591217C9D100936B53 /* Korean */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -420,6 +425,7 @@
 			children = (
 				9A8BB4710DCA43F8003AD06B /* Russian */,
 				9A9876440DCABC01000E61CA /* English */,
+				45B9D0121217A59D00936B53 /* Korean */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -429,6 +435,7 @@
 			children = (
 				C7C90A520AFA78F70080D14F /* English */,
 				9A8BB4720DCA43F8003AD06B /* Russian */,
+				45B9D0571217C9B200936B53 /* Korean */,
 			);
 			name = MainMenu.nib;
 			sourceTree = "<group>";
