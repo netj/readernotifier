@@ -804,6 +804,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	if (![[prefs valueForKey:@"dontShowTooltips"] boolValue])
 		[item setToolTip:[NSString stringWithFormat:NSLocalizedString(@"Title: %@\nFeed: %@\n\n%@", nil), f.title, f.source, f.summary]];
 	[item setTitle:f.feedId];
+    [item setImage:f.icon];
 	[item setTarget:self];
 	[item setKeyEquivalentModifierMask:0];
 }
@@ -819,6 +820,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	[item setAlternate:YES];
 	// even though setting the title twice seems like doing double work, we have to, because [sender title] will always be the last set title!
 	[item setTitle:f.feedId];
+	[item setImage:f.icon];
 	[item setTarget:self];
 }
 
@@ -833,6 +835,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	[item setAlternate:YES];
 	// even though setting the title twice seems like doing double work, we have to, because [sender title] will always be the last set title!
 	[item setTitle:f.feedId];
+	[item setImage:f.icon];
 	[item setTarget:self];
 }
 
@@ -846,10 +849,9 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 			continue;
             NSString * trimmedTitleTag = [Utilities trimDownString:[Utilities flattenHTML:f.title] withMaxLenght:maxLettersInTitle];
 		NSString * trimmedSourceTag = [Utilities trimDownString:[Utilities flattenHTML:f.source] withMaxLenght:maxLettersInSource];
-		NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
 		NSURL * iconURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://s2.googleusercontent.com/s2/favicons?alt=feed&domain=%@", [[NSURL URLWithString:f.link] host]]];
 		f.icon = [[[NSImage alloc] initWithContentsOfURL:iconURL] autorelease];
-		[item setImage:f.icon];
+		NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
 		[self setUpMainFeedItem:item withTitleTag:trimmedTitleTag sourceTag:trimmedSourceTag forFeed:f];
 		[GRMenu insertItem:item atIndex:endOfFeedIndex++];
 		NSMenuItem * itemCommand = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(doCommandActionFromMenu:) keyEquivalent:@""];
