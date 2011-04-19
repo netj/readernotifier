@@ -962,10 +962,20 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 								   clickContext:nil];
 	} else {
 		for (Feed * f in newFeeds) {
+			NSString *linkHost = [[NSURL URLWithString:f.link] host];
+			// We can enjoy higher resolution icons for some sites, but it's
+			// generally a bad idea to hog the network by generating traffic
+			// to all the different hosts.	Moreover, doing so makes Growl
+			// notifications appear slowly. :(
+			// NSURL *iconURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/favicon.ico", linkHost]];
+			NSURL *iconURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://s2.googleusercontent.com/s2/favicons?alt=feed&domain=%@", linkHost]];
+			NSData *iconData = [NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:iconURL]
+													 returningResponse:nil
+																 error:nil];
 			[GrowlApplicationBridge notifyWithTitle:[Utilities flattenHTML:f.source] 
 										description:[Utilities flattenHTML:f.title]
 								   notificationName:NSLocalizedString(@"New Unread Items", nil)
-										   iconData:nil
+										   iconData:iconData
 										   priority:0
 										   isSticky:NO
 									   clickContext:[NSString stringWithString:f.feedId]];
