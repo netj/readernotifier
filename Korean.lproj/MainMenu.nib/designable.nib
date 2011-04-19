@@ -12,9 +12,9 @@
 		</object>
 		<object class="NSMutableArray" key="IBDocument.EditedObjectIDs">
 			<bool key="EncodedWithXMLCoder">YES</bool>
+			<integer value="518"/>
 			<integer value="207"/>
 			<integer value="432"/>
-			<integer value="514"/>
 		</object>
 		<object class="NSArray" key="IBDocument.PluginDependencies">
 			<bool key="EncodedWithXMLCoder">YES</bool>
@@ -66,7 +66,7 @@
 										<characters key="NS.bytes">1</characters>
 									</object>
 									<object class="NSView" key="NSView" id="359520890">
-										<nil key="NSNextResponder"/>
+										<reference key="NSNextResponder" ref="445706370"/>
 										<int key="NSvFlags">256</int>
 										<object class="NSMutableArray" key="NSSubviews">
 											<bool key="EncodedWithXMLCoder">YES</bool>
@@ -540,7 +540,7 @@
 											<object class="NSTextField" id="17799142">
 												<reference key="NSNextResponder" ref="359520890"/>
 												<int key="NSvFlags">256</int>
-												<string key="NSFrame">{{18, 262}, {344, 17}}</string>
+												<string key="NSFrame">{{18, 262}, {197, 17}}</string>
 												<reference key="NSSuperview" ref="359520890"/>
 												<bool key="NSEnabled">YES</bool>
 												<object class="NSTextFieldCell" key="NSCell" id="932966802">
@@ -690,6 +690,7 @@
 											</object>
 										</object>
 										<string key="NSFrame">{{10, 33}, {501, 357}}</string>
+										<reference key="NSSuperview" ref="445706370"/>
 									</object>
 									<string key="NSLabel">일반</string>
 									<reference key="NSColor" ref="859502926"/>
@@ -1814,7 +1815,7 @@ j5nsnLzroZwg67Cb7JWEIOuGk+yKteuLiOuLpC4</string>
 								</object>
 								<object class="NSTabViewItem" id="502705683">
 									<object class="NSView" key="NSView" id="742941010">
-										<reference key="NSNextResponder" ref="445706370"/>
+										<nil key="NSNextResponder"/>
 										<int key="NSvFlags">256</int>
 										<object class="NSMutableArray" key="NSSubviews">
 											<bool key="EncodedWithXMLCoder">YES</bool>
@@ -1958,21 +1959,20 @@ b3JnKQ</string>
 											</object>
 										</object>
 										<string key="NSFrame">{{10, 33}, {501, 357}}</string>
-										<reference key="NSSuperview" ref="445706370"/>
 									</object>
 									<string key="NSLabel">정보</string>
 									<reference key="NSColor" ref="859502926"/>
 									<reference key="NSTabView" ref="445706370"/>
 								</object>
 							</object>
-							<reference key="NSSelectedTabViewItem" ref="502705683"/>
+							<reference key="NSSelectedTabViewItem" ref="290900611"/>
 							<reference key="NSFont" ref="453707911"/>
 							<int key="NSTvFlags">0</int>
 							<bool key="NSAllowTruncatedLabels">YES</bool>
 							<bool key="NSDrawsBackground">YES</bool>
 							<object class="NSMutableArray" key="NSSubviews">
 								<bool key="EncodedWithXMLCoder">YES</bool>
-								<reference ref="742941010"/>
+								<reference ref="359520890"/>
 							</object>
 						</object>
 					</object>
