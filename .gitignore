@@ -1,4 +1,10 @@
-build
 .DS_Store
-Reader Notifier.xcodeproj/*.pbxuser
-Reader Notifier.xcodeproj/*.perspectivev3
+
+# xcode noise
+*.mode1v3
+*.pbxuser
+*.perspective
+*.perspectivev3
+*~.nib/
+/build
+
