@@ -1,6 +1,6 @@
 h3. Contact and About
 
-Reader Notifier has originally been made by Troels Bay, forked by canbuffi and now actively developed by Mike Godenzi and Claudio Marforio, independent developers living in Europe. Please donate if you enjoy and find the app useful.
+Reader Notifier has originally been made by Troels Bay, forked by canbuffi and now actively developed by Mike Godenzi and Claudio Marforio, independent developers living in Europe, and Jaeho Shin in Korea. Please donate if you enjoy and find the app useful.
 
 h3. Some background
 
