@@ -25,7 +25,7 @@
 #import "IPMNetworkManager.h"
 #import "IPMPendingConnection.h"
 #import "IPMNetworkManagerDelegate.h"
-#import "JSON.h"
+#import "JSONKit.h"
 
 @interface IPMNetworkManager (PrivateMethods)
 - (void)execNetworkRequest:(NSString *)urlrequest 
@@ -176,7 +176,7 @@
 					  andParam:(id<NSObject>)param {
 	IPMPendingConnection * pc = [[IPMPendingConnection alloc] initWithDelegate:delegate andParam:param];
 	pc.nrt = type;
-	NSString * bodyString = [body JSONRepresentation];
+	NSString * bodyString = [body JSONString];
 	NSData * bodyData = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
 	NSMutableDictionary * allHeaders;
 	if (headers) {
@@ -356,7 +356,7 @@
 
 - (void)processJSONResponseForPendingConnection:(IPMPendingConnection *)pc {
 	NSString * readableString = [[NSString alloc] initWithData:pc.receivedData encoding:pc.encoding];
-	id jsonItem = [readableString JSONValue];
+	id jsonItem = [readableString objectFromJSONString];
 	if ([pc.delegate respondsToSelector:@selector(networkManagerDidReceiveJSONResponse:withParam:)])
 		[pc.delegate networkManagerDidReceiveJSONResponse:jsonItem withParam:pc.param];
 	[readableString release];
