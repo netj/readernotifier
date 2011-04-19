@@ -844,9 +844,12 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 			[newFeeds addObject:f];
 		if ([[prefs valueForKey:@"minimalFunction"] boolValue])
 			continue;
-		NSString * trimmedTitleTag = [Utilities trimDownString:[Utilities flattenHTML:f.title] withMaxLenght:maxLettersInTitle];
+            NSString * trimmedTitleTag = [Utilities trimDownString:[Utilities flattenHTML:f.title] withMaxLenght:maxLettersInTitle];
 		NSString * trimmedSourceTag = [Utilities trimDownString:[Utilities flattenHTML:f.source] withMaxLenght:maxLettersInSource];
 		NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
+		NSURL * iconURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://s2.googleusercontent.com/s2/favicons?alt=feed&domain=%@", [[NSURL URLWithString:f.link] host]]];
+		f.icon = [[[NSImage alloc] initWithContentsOfURL:iconURL] autorelease];
+		[item setImage:f.icon];
 		[self setUpMainFeedItem:item withTitleTag:trimmedTitleTag sourceTag:trimmedSourceTag forFeed:f];
 		[GRMenu insertItem:item atIndex:endOfFeedIndex++];
 		NSMenuItem * itemCommand = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(doCommandActionFromMenu:) keyEquivalent:@""];
@@ -962,20 +965,10 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 								   clickContext:nil];
 	} else {
 		for (Feed * f in newFeeds) {
-			NSString *linkHost = [[NSURL URLWithString:f.link] host];
-			// We can enjoy higher resolution icons for some sites, but it's
-			// generally a bad idea to hog the network by generating traffic
-			// to all the different hosts.	Moreover, doing so makes Growl
-			// notifications appear slowly. :(
-			// NSURL *iconURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/favicon.ico", linkHost]];
-			NSURL *iconURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://s2.googleusercontent.com/s2/favicons?alt=feed&domain=%@", linkHost]];
-			NSData *iconData = [NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:iconURL]
-													 returningResponse:nil
-																 error:nil];
 			[GrowlApplicationBridge notifyWithTitle:[Utilities flattenHTML:f.source] 
 										description:[Utilities flattenHTML:f.title]
 								   notificationName:NSLocalizedString(@"New Unread Items", nil)
-										   iconData:iconData
+										   iconData:[f.icon TIFFRepresentation]
 										   priority:0
 										   isSticky:NO
 									   clickContext:[NSString stringWithString:f.feedId]];

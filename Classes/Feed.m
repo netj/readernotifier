@@ -10,7 +10,7 @@
 
 @implementation Feed
 
-@synthesize feedUrl, feedId, link, title, source, summary, torrentcastLink;
+@synthesize feedUrl, feedId, link, title, source, summary, torrentcastLink, icon;
 
 - (id)init {
 	if (self = [super init]) {
@@ -21,6 +21,7 @@
 		source = nil;
 		summary = nil;
 		torrentcastLink = nil;
+		icon = nil;
 	}
 	return self;
 }
@@ -33,12 +34,13 @@
 	[source release];
 	[summary release];
 	[torrentcastLink release];
+	[icon release];
 	[super dealloc];
 }
 
 - (NSString *)description {
-	return [NSString stringWithFormat:@"\n[\nfeedUrl: %@\nfeedId: %@\nlink: %@\ntitle: %@\nsource: %@\nsummary: %@\ntorrentcastLink: %@\n]\n",
-			feedUrl, feedId, link, title, source, summary, torrentcastLink];
+	return [NSString stringWithFormat:@"\n[\nfeedUrl: %@\nfeedId: %@\nlink: %@\ntitle: %@\nsource: %@\nsummary: %@\ntorrentcastLink: %@\nicon: %@\n]\n",
+			feedUrl, feedId, link, title, source, summary, torrentcastLink, icon];
 }
 
 - (BOOL)isEqualToFeed:(Feed *)f {

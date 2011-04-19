@@ -33,6 +33,7 @@
 	NSString * source;
 	NSString * summary;
 	NSString * torrentcastLink;
+	NSImage * icon;
 }
 
 @property(nonatomic, retain) NSString * feedUrl;
@@ -42,5 +43,6 @@
 @property(nonatomic, retain) NSString * source;
 @property(nonatomic, retain) NSString * summary;
 @property(nonatomic, retain) NSString * torrentcastLink;
+@property(nonatomic, retain) NSImage * icon;
 
 @end
