@@ -72,4 +72,19 @@
 	return stringToTrim;
 }
 
++ (NSURL *)getFinalURLForURL:(NSURL *)url {
+    NSMutableURLRequest * request =
+    [NSMutableURLRequest requestWithURL:url
+                            cachePolicy:NSURLRequestReloadIgnoringCacheData
+                        timeoutInterval:10];
+    [request setHTTPMethod:@"HEAD"];
+    NSURLResponse * response;
+    [NSURLConnection sendSynchronousRequest:request
+                          returningResponse:&response
+                                      error:nil];
+    NSLog(@"final URL of %@ is %@", url, [response URL]);
+    return [response URL];
+}
+
+
 @end

@@ -54,6 +54,9 @@
 	NSDictionary * normalAttrsDictionary;
 	NSDictionary * smallAttrsDictionary;
 	NSDictionary * cookieHeader;
+
+    NSSet * feedProxyHostNames;
+    NSMutableDictionary * feedProxyHostNameCache;
 	
 	NSString * torrentCastFolderPathString;
 	NSString * currentToken;

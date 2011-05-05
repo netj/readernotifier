@@ -52,7 +52,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 #define maxLettersInSource 20
 #define maxLettersInTitle 60
 #define secondsToSleep 60
-#define kUserAgent @"reader-notifier-reloaded/2.2.1"
+#define kUserAgent @"reader-notifier-reloaded/2.2.4"
 
 @interface MainController (PrivateMethods)
 - (void)shareFeed:(Feed *)f;
@@ -82,6 +82,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 - (Feed *)findFeedWithId:(NSString *)feedId;
 - (Feed *)feedForIndex:(NSUInteger)index;
 - (void)removeFeed:(Feed *)f;
+- (NSString *)getFaviconHostForFeedItem:(Feed *)f;
 @end
 
 @implementation MainController
@@ -120,6 +121,12 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 															 forKeys:k];
 		// we need this to know when the computer wakes from sleep
 		[[[NSWorkspace sharedWorkspace] notificationCenter] addObserver:self selector:@selector(awakenFromSleep) name:NSWorkspaceDidWakeNotification object:nil];
+	    
+	    feedProxyHostNames = [[NSSet alloc] initWithObjects:
+				  @"feedproxy.google.com",
+				  @"feeds.gawker.com",
+				  nil];
+	    feedProxyHostNameCache = [[NSMutableDictionary alloc] init];
 	}
 	return self;
 }
@@ -141,6 +148,8 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	[newFeeds release];
 	[normalAttrsDictionary release];
 	[smallAttrsDictionary release];
+    [feedProxyHostNames release];
+    [feedProxyHostNameCache release];
     [super dealloc];
 }
 
@@ -845,12 +854,12 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	for (Feed * f in feeds) {
 		if (![oldFeeds containsObject:f]) // Growl help
 			[newFeeds addObject:f];
+	    NSURL * iconURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://s2.googleusercontent.com/s2/favicons?alt=feed&domain=%@", [self getFaviconHostForFeedItem:f]]];
+	    f.icon = [[[NSImage alloc] initWithContentsOfURL:iconURL] autorelease];
 		if ([[prefs valueForKey:@"minimalFunction"] boolValue])
 			continue;
             NSString * trimmedTitleTag = [Utilities trimDownString:[Utilities flattenHTML:f.title] withMaxLenght:maxLettersInTitle];
-		NSString * trimmedSourceTag = [Utilities trimDownString:[Utilities flattenHTML:f.source] withMaxLenght:maxLettersInSource];
-		NSURL * iconURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://s2.googleusercontent.com/s2/favicons?alt=feed&domain=%@", [[NSURL URLWithString:f.link] host]]];
-		f.icon = [[[NSImage alloc] initWithContentsOfURL:iconURL] autorelease];
+	    NSString * trimmedSourceTag = [Utilities trimDownString:[Utilities flattenHTML:f.source] withMaxLenght:maxLettersInSource];
 		NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(launchLink:) keyEquivalent:@""];
 		[self setUpMainFeedItem:item withTitleTag:trimmedTitleTag sourceTag:trimmedSourceTag forFeed:f];
 		[GRMenu insertItem:item atIndex:endOfFeedIndex++];
@@ -864,6 +873,38 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		[itemCommand release];
 		[itemShift release];
 	}
+}
+
+- (NSString *)getFaviconHostForFeedItem:(Feed *)f {
+    NSURL * linkURL = [NSURL URLWithString:f.link];
+    NSString * linkHost = [linkURL host];
+    // we should figure out the actual URL if its obfuscated, e.g. by FeedBurner
+    if ([feedProxyHostNames containsObject:linkHost]) {
+	// first, see if we recognize the path of the feedproxy URL
+	// which should look like /~r/SITEID/FEEDID/~3/...
+	NSString * key = nil;
+	NSArray * paths = [[linkURL path] pathComponents];
+	if ([[paths objectAtIndex:1] isEqualToString:@"~r"] &&
+	    [[paths objectAtIndex:4] isEqualToString:@"~3"]) {
+	    NSRange r = { location: 2, length: 2 };
+	    key = [NSString pathWithComponents:
+		   [paths objectsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:r]]];
+	}
+	if (key) {
+	    // check if cache already has it
+	    linkHost = [feedProxyHostNameCache objectForKey:key];
+	    if (!linkHost) {
+		// or ask FeedBurner
+		linkHost = [[Utilities getFinalURLForURL:linkURL] host];
+		[feedProxyHostNameCache setObject:linkHost forKey:key];
+	    }		    
+	}
+	else
+	    // otherwise, just ask FeedBurner
+	    linkHost = [[Utilities getFinalURLForURL:linkURL] host];
+	NSLog(@"unobfuscated %@ to %@", f.link, linkHost);
+    }
+    return linkHost;
 }
 
 - (void)updateNotifications {

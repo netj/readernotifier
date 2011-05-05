@@ -31,5 +31,6 @@
 + (NSString *)flattenHTML:(NSString *)stringToFlatten;
 + (NSString *)trimDownString:(NSString *)stringToTrim withMaxLenght:(NSInteger)maxLength;
 + (NSString *)replaceMultiSpacesWithSingleSpace:(NSString *)s;
++ (NSURL *)getFinalURLForURL:(NSURL *)url;
 
 @end
