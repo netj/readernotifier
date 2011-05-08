@@ -884,12 +884,14 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 	// which should look like /~r/SITEID/FEEDID/~3/...
 	NSString * key = nil;
 	NSArray * paths = [[linkURL path] pathComponents];
+        NSUInteger indexOfLastKey = [paths indexOfObject:@"~3"];
 	if ([[paths objectAtIndex:1] isEqualToString:@"~r"] &&
-	    [[paths objectAtIndex:4] isEqualToString:@"~3"]) {
-	    NSRange r = { location: 2, length: 2 };
+	    indexOfLastKey != NSNotFound) {
+	    NSRange r = { location: 2, length: indexOfLastKey - 2 };
 	    key = [NSString pathWithComponents:
 		   [paths objectsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:r]]];
 	}
+        NSLog(@"key=%@", key);
 	if (key) {
 	    // check if cache already has it
 	    linkHost = [feedProxyHostNameCache objectForKey:key];
