@@ -491,7 +491,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 - (void)addFeed:(NSString *)url {
 	NSString * sanitizedUrl = [url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 	if (![[prefs valueForKey:@"dontVerifySubscription"] boolValue]) {
-		NSString * completeUrl = [NSString stringWithFormat:@"%@://www.google.com/reader/preview/*/feed/%@", [self getURLPrefix], sanitizedUrl];
+		NSString * completeUrl = [NSString stringWithFormat:@"%@://www.google.com/reader/view/#stream/feed%%2F%@", [self getURLPrefix], sanitizedUrl];
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:completeUrl]];
 	} else {
 		NSString * sendString = [NSString stringWithFormat:@"%@://www.google.com/reader/quickadd=%@&T=%@", [self getURLPrefix], sanitizedUrl, currentToken];
