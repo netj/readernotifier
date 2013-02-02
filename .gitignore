@@ -7,4 +7,9 @@
 *.perspectivev3
 *~.nib/
 /build
+*.xcuserdatad/
 
+/Sparkle *
+/dsa_priv.pem
+/*.app
+/*.zip

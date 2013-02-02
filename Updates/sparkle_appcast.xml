@@ -2,9 +2,22 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"  xmlns:dc="http://purl.org/dc/elements/1.1/">
 	<channel>
 		<title>Reader Notifier Reloaded</title>
-		<link>http://www.caffeineapps.com/ReaderNotifierReloaded/sparkle_appcast.xml</link>
-		<description>A Google Reader notifier that sits in your MacOSX Menu bar for easy access to all your news.</description>
+		<link>https://dl.dropbox.com/u/4558813/ReaderNotifier.Updates/sparkle_appcast.xml</link>
+		<description>A Google Reader notifier that stays on your OS X Menu bar for easy access to all your new feed items.</description>
 		<language>en</language>
+
+<item>  
+  <title>Reader Notifier Reloaded version 2.3</title>
+  <sparkle:releaseNotesLink>https://dl.dropbox.com/u/4558813/ReaderNotifier.Updates/2.3.html</sparkle:releaseNotesLink>
+  <pubDate>Sat, 02 Feb 2013 15:29:53 -0800</pubDate>
+  <enclosure
+    url="https://dl.dropbox.com/u/4558813/ReaderNotifier.Updates/Reader Notifier Reloaded-2.3.zip"
+    sparkle:version="2.3"
+    type="application/octet-stream"
+    length="1201214"
+    sparkle:dsaSignature="MC0CFQCDlzGMBz2kQny43DjehcmEpboQGgIULZbPijOJmbq0+LTyL9kaOUu7Ajk="
+  />
+</item>
 		
 		<item>
 			<title>Version 2.2.2</title>
