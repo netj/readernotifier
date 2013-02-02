@@ -494,8 +494,9 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 		NSString * completeUrl = [NSString stringWithFormat:@"%@://www.google.com/reader/view/#stream/feed%%2F%@", [self getURLPrefix], sanitizedUrl];
 		[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:completeUrl]];
 	} else {
-		NSString * sendString = [NSString stringWithFormat:@"%@://www.google.com/reader/quickadd=%@&T=%@", [self getURLPrefix], sanitizedUrl, currentToken];
-		[networkManager sendPOSTNetworkRequest:sendString withBody:@"" headerFields:cookieHeader responseType:NORESPONSE_NRT delegate:nil andParam:nil];
+        NSString * url = [NSString stringWithFormat:@"%@://www.google.com/reader/api/0/subscription/quickadd?client=scroll", [self getURLPrefix]];
+		NSString * sendString = [NSString stringWithFormat:@"quickadd=%@&T=%@", sanitizedUrl, currentToken];
+		[networkManager sendPOSTNetworkRequest:url withBody:sendString headerFields:cookieHeader responseType:NORESPONSE_NRT delegate:nil andParam:nil];
 		// we need to sleep a little
 		[NSThread sleepForTimeInterval:1.5];
 		[self checkNow:nil];
