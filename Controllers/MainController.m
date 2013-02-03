@@ -1,4 +1,4 @@
-// Copyright (C) 2010 Mike Godenzi, Claudio Marforio
+// Copyright (C) 2011-2013 Jaeho Shin. 2010 Mike Godenzi, Claudio Marforio.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 //  Created by Eli Dourado on 12/8/05.
 //  Modified by Troels Bay (troelsbay@troelsbay.eu)
 //	Modified by Mike Godenzi (godenzim@gmail.com) and Claudio Marforio (www.cloudgoessocial.net) on 5/20/10
+//	Modified by Jaeho Shin <netj@sparcs.org> in August 2010
 //
 
 #import "MainController.h"
@@ -52,7 +53,7 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 #define maxLettersInSource 20
 #define maxLettersInTitle 60
 #define secondsToSleep 60
-#define kUserAgent @"reader-notifier-reloaded/2.2.4"
+#define kUserAgent [NSString stringWithFormat:@"reader-notifier-reloaded/%@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]]
 
 @interface MainController (PrivateMethods)
 - (void)shareFeed:(Feed *)f;
@@ -213,11 +214,11 @@ typedef enum _NORMAL_BUTTON_OFFSETS {
 #pragma mark IBAction methods
 
 - (IBAction)gitHubButtonPressed:(id)sender {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://github.com/godenzim/readernotifier"]];
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://github.com/netj/readernotifier"]];
 }
 
 - (IBAction)blogButtonPressed:(id)sender {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://www.cloudgoessocial.net/"]];
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://netj.org/"]];
 }
 
 - (IBAction)checkNow:(id)sender {	

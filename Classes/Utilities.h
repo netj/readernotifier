@@ -20,6 +20,8 @@
 //  Created by Claudio Marforio on 5/22/10.
 //  Copyright 2010 www.cloudgoessocial.net. All rights reserved.
 //
+//	Modified by Jaeho Shin <netj@sparcs.org>
+//
 
 #import <Cocoa/Cocoa.h>
 

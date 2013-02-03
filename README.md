@@ -21,7 +21,7 @@ If you need an older version, check the [list of all previous versions](http://j
 
 ### Some background
 
-Reader Notifier was originally created by [Troels Bay](http://troelsbay.eu/), forked by [canbuffi](http://github.com/canbuffi), and then reborn as Reader Notifier Reloaded by [Mike Godenzi](https://github.com/godenzim) and Claudio Marforio.  Jaeho Shin added favicon support, Korean localization, and some minor tweaks.
+Reader Notifier was originally created by [Troels Bay](http://troelsbay.eu/), forked by [canbuffi](http://github.com/canbuffi), and then reborn as Reader Notifier Reloaded by [Mike Godenzi](https://github.com/godenzim) and [Claudio Marforio](www.cloudgoessocial.net).  Jaeho Shin added favicon support, Korean localization, and some minor tweaks.
 
 This is Jaeho's fork of [godenzi's Reader Notifier Reloaded](https://github.com/godenzim/readernotifier) to easily publish bug fixes and new features.  Like the original it is released under GPL.
 

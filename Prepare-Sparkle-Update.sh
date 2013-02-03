@@ -5,7 +5,7 @@
 # for Sparkle appcast.
 # 
 # The name of the zip archive will be APPNAME-VERSION.zip, where the VERSION is
-# the value of CFBundleShortVersionString in Info.plist of the given app.
+# the value of CFBundleVersion in Info.plist of the given app.
 # The default for DSA_PRIV_KEY, path to DSA private key is: dsa_priv.pem
 # The default BASE_URL is derived from the value of SUFeedURL of the app's
 # Info.plist.
@@ -24,7 +24,7 @@ app=$1; shift
 name=$(basename "$app" .app)
 version=$(
     cat "$app"/Contents/Info.plist | plutil -convert json - -o - |
-    sed 's/.*"CFBundleShortVersionString":"\([^"]*\).*/\1/'
+    sed 's/.*"CFBundleVersion":"\([^"]*\).*/\1/'
 )
 sparkleKey=${1:-dsa_priv.pem}
 sparkleBaseURL=${2:-$(
@@ -50,7 +50,7 @@ cat <<EOF
   <sparkle:releaseNotesLink>$sparkleBaseURL/$version.html</sparkle:releaseNotesLink>
   <pubDate>$(date --rfc-822)</pubDate>
   <enclosure
-    url="$sparkleBaseURL/$zip"
+    url="${sparkleBaseURL%.Updates}/$zip"
     sparkle:version="$version"
     type="application/octet-stream"
     length="$(perl -e 'print -s $ARGV[0]' "$zip")"

@@ -15,11 +15,12 @@
 
 //
 //  MainController.h
-//  GoogleReader
+//  Reader Notifier
 //
 //  Created by Eli Dourado on 12/8/05.
 //  Modified by Troels Bay (troelsbay@troelsbay.eu)
 //	Modified by Mike Godenzi (godenzim@gmail.com) and Claudio Marforio (www.cloudgoessocial.net) on 5/20/10
+//	Modified by Jaeho Shin <netj@sparcs.org> in August 2010
 //
 
 #import <Cocoa/Cocoa.h>

@@ -20,6 +20,8 @@
 //  Created by Mike Godenzi on 5/28/10.
 //  Copyright 2010 Mike Godenzi. All rights reserved.
 //
+//	Modified by Jaeho Shin <netj@sparcs.org>
+//
 
 #import <Cocoa/Cocoa.h>
 

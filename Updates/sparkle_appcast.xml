@@ -7,11 +7,24 @@
 		<language>en</language>
 
 <item>  
+  <title>Reader Notifier Reloaded version 2.3.1</title>
+  <sparkle:releaseNotesLink>https://dl.dropbox.com/u/4558813/ReaderNotifier.Updates/2.3.1.html</sparkle:releaseNotesLink>
+  <pubDate>Sat, 02 Feb 2013 17:37:14 -0800</pubDate>
+  <enclosure
+    url="https://dl.dropbox.com/u/4558813/ReaderNotifier/Reader Notifier Reloaded-2.3.1.zip"
+    sparkle:version="2.3.1"
+    type="application/octet-stream"
+    length="1195260"
+    sparkle:dsaSignature="MCwCFBmEMfmPfXzyfNZPADzaaeE0ThYGAhQWw1OFUGqHQxVqZkaiZjXWGOPTvg=="
+  />
+</item>
+
+<item>  
   <title>Reader Notifier Reloaded version 2.3</title>
   <sparkle:releaseNotesLink>https://dl.dropbox.com/u/4558813/ReaderNotifier.Updates/2.3.html</sparkle:releaseNotesLink>
   <pubDate>Sat, 02 Feb 2013 15:29:53 -0800</pubDate>
   <enclosure
-    url="https://dl.dropbox.com/u/4558813/ReaderNotifier.Updates/Reader Notifier Reloaded-2.3.zip"
+    url="https://dl.dropbox.com/u/4558813/ReaderNotifier/Reader Notifier Reloaded-2.3.zip"
     sparkle:version="2.3"
     type="application/octet-stream"
     length="1201214"
@@ -19,6 +32,7 @@
   />
 </item>
 		
+
 		<item>
 			<title>Version 2.2.2</title>
 			<sparkle:releaseNotesLink>http://www.caffeineapps.com/ReaderNotifierReloaded/2.2.2.html</sparkle:releaseNotesLink>

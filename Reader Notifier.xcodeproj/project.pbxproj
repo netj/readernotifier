@@ -483,6 +483,7 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = "Reader Notifier Reloaded";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -513,6 +514,7 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = "Reader Notifier Reloaded";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -542,6 +544,7 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = "Reader Notifier Reloaded";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
