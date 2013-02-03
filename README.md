@@ -4,6 +4,10 @@
 It is very useful if you can't afford the time to regularly check new items in your subscriptions, but still want to discover interesting items as you work on other things.
 It requires a Mac with relatively modern OS X (>= 10.6), and for notification, it bundles [Growl](http://growl.info) and supports [Notification Center](http://www.apple.com/osx/whats-new/#notification-center) on Mountain Lion (10.8).
 
+<img src="https://raw.github.com/netj/readernotifier/master/README.files/readernotifier-screenshot.png"  alt="Screen Shot of Reader Notifier Reloaded's Menubar Item">
+
+<img src="https://raw.github.com/netj/readernotifier/master/README.files/readernotifier-screenshot2.png" alt="Screen Shot of Reader Notifier Reloaded's Menu">
+
 It is currently maintained by [Jaeho Shin](http://github.com/netj) with very slim resource.
 Please [donate](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=Jaeho%2eShin%40Gmail%2ecom&lc=US&item_name=Reader%20Notifier%20Reloaded%20development%20support&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted) if you enjoy and find the app useful, active development might happen more often with your support.
 
